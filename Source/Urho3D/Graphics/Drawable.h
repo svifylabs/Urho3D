@@ -54,7 +54,7 @@ struct RayQueryResult;
 struct WorkItem;
 
 /// Geometry update type.
-enum UpdateGeometryType
+enum NONSCRIPTABLE UpdateGeometryType
 {
     UPDATE_NONE = 0,
     UPDATE_MAIN_THREAD,
@@ -75,7 +75,7 @@ struct FrameInfo
 };
 
 /// Source data for a 3D geometry draw call.
-struct URHO3D_API SourceBatch
+struct URHO3D_API NONSCRIPTABLE SourceBatch
 {
     /// Construct with defaults.
     SourceBatch();
