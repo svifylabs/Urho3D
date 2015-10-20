@@ -1,36 +1,18 @@
-//
-// Copyright (c) 2008-2015 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
+#include "../Core/ProcessUtils.h"
 #include "../Core/Profiler.h"
+#include "../Core/Timer.h"
 #include "../Container/Sort.h"
+#include "../Container/Vector.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/Shader.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../Graphics/Texture2D.h"
+#include "../Graphics/VertexBuffer.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
@@ -53,1744 +35,1108 @@
 #include "../UI/ToolTip.h"
 #include "../UI/UI.h"
 #include "../UI/UIEvents.h"
-#include "../UI/Window.h"
 #include "../UI/View3D.h"
+#include "../UI/Window.h"
+#include "../Resource/Image.h"
 
-#include <SDL/SDL.h>
+#include "IMUI.h"
+
+#include "../Engine/Engine.h"
+#include "../Graphics/Renderer.h"
+#include "../Graphics/RenderPath.h"
+#include "../Scene/Scene.h"
+#include "../Graphics/Camera.h"
+#include "../Graphics/Viewport.h"
+#include "../IO/PackageFile.h"
+#include "../Network/Network.h"
+#include "../Network/Connection.h"
+#include "../Audio/Audio.h"
+#include "../Graphics/IndexBuffer.h"
 
 #include "../DebugNew.h"
 
-#define TOUCHID_MASK(id) (1 << id)
+
+
+
+
+
+
 
 namespace Urho3D
 {
-
-StringHash VAR_ORIGIN("Origin");
-const StringHash VAR_ORIGINAL_PARENT("OriginalParent");
-const StringHash VAR_ORIGINAL_CHILD_INDEX("OriginalChildIndex");
-const StringHash VAR_PARENT_CHANGED("ParentChanged");
-
-const float DEFAULT_DOUBLECLICK_INTERVAL = 0.5f;
-const float DEFAULT_DRAGBEGIN_INTERVAL = 0.5f;
-const float DEFAULT_TOOLTIP_DELAY = 0.5f;
-const int DEFAULT_DRAGBEGIN_DISTANCE = 5;
-const int DEFAULT_FONT_TEXTURE_MAX_SIZE = 2048;
-
-const char* UI_CATEGORY = "UI";
-
-UI::UI(Context* context) :
-    Object(context),
-    rootElement_(new UIElement(context)),
-    rootModalElement_(new UIElement(context)),
-    doubleClickInterval_(DEFAULT_DOUBLECLICK_INTERVAL),
-    dragBeginInterval_(DEFAULT_DRAGBEGIN_INTERVAL),
-    defaultToolTipDelay_(DEFAULT_TOOLTIP_DELAY),
-    dragBeginDistance_(DEFAULT_DRAGBEGIN_DISTANCE),
-    mouseButtons_(0),
-    lastMouseButtons_(0),
-    qualifiers_(0),
-    maxFontTextureSize_(DEFAULT_FONT_TEXTURE_MAX_SIZE),
-    initialized_(false),
-    usingTouchInput_(false),
-#ifdef WIN32
-    nonFocusedMouseWheel_(false),    // Default MS Windows behaviour
-#else
-    nonFocusedMouseWheel_(true),     // Default Mac OS X and Linux behaviour
-#endif
-    useSystemClipboard_(false),
-#if defined(ANDROID) || defined(IOS)
-    useScreenKeyboard_(true),
-#else
-    useScreenKeyboard_(false),
-#endif
-    useMutableGlyphs_(false),
-    forceAutoHint_(false),
-    uiRendered_(false),
-    nonModalBatchSize_(0),
-    dragElementsCount_(0),
-    dragConfirmedCount_(0)
-{
-    rootElement_->SetTraversalMode(TM_DEPTH_FIRST);
-    rootModalElement_->SetTraversalMode(TM_DEPTH_FIRST);
-
-    // Register UI library object factories
-    RegisterUILibrary(context_);
-
-    SubscribeToEvent(E_SCREENMODE, HANDLER(UI, HandleScreenMode));
-    SubscribeToEvent(E_MOUSEBUTTONDOWN, HANDLER(UI, HandleMouseButtonDown));
-    SubscribeToEvent(E_MOUSEBUTTONUP, HANDLER(UI, HandleMouseButtonUp));
-    SubscribeToEvent(E_MOUSEMOVE, HANDLER(UI, HandleMouseMove));
-    SubscribeToEvent(E_MOUSEWHEEL, HANDLER(UI, HandleMouseWheel));
-    SubscribeToEvent(E_TOUCHBEGIN, HANDLER(UI, HandleTouchBegin));
-    SubscribeToEvent(E_TOUCHEND, HANDLER(UI, HandleTouchEnd));
-    SubscribeToEvent(E_TOUCHMOVE, HANDLER(UI, HandleTouchMove));
-    SubscribeToEvent(E_KEYDOWN, HANDLER(UI, HandleKeyDown));
-    SubscribeToEvent(E_TEXTINPUT, HANDLER(UI, HandleTextInput));
-    SubscribeToEvent(E_DROPFILE, HANDLER(UI, HandleDropFile));
-
-    // Try to initialize right now, but skip if screen mode is not yet set
-    Initialize();
-}
-
-UI::~UI()
-{
-}
-
-void UI::SetCursor(Cursor* cursor)
-{
-    // Remove old cursor (if any) and set new
-    if (cursor_)
-    {
-        rootElement_->RemoveChild(cursor_);
-        cursor_.Reset();
-    }
-    if (cursor)
-    {
-        rootElement_->AddChild(cursor);
-        cursor_ = cursor;
-
-        IntVector2 pos = cursor_->GetPosition();
-        const IntVector2& rootSize = rootElement_->GetSize();
-        pos.x_ = Clamp(pos.x_, 0, rootSize.x_ - 1);
-        pos.y_ = Clamp(pos.y_, 0, rootSize.y_ - 1);
-        cursor_->SetPosition(pos);
-    }
-}
-
-void UI::SetFocusElement(UIElement* element, bool byKey)
-{
-    using namespace FocusChanged;
-
-    UIElement* originalElement = element;
-
-    if (element)
-    {
-        // Return if already has focus
-        if (focusElement_ == element)
-            return;
-
-        // Only allow child elements of the modal element to receive focus
-        if (HasModalElement())
-        {
-            UIElement* topLevel = element->GetParent();
-            while (topLevel && topLevel->GetParent() != rootElement_)
-                topLevel = topLevel->GetParent();
-            if (topLevel)   // If parented to non-modal root then ignore
-                return;
-        }
-
-        // Search for an element in the hierarchy that can alter focus. If none found, exit
-        element = GetFocusableElement(element);
-        if (!element)
-            return;
-    }
-
-    // Remove focus from the old element
-    if (focusElement_)
-    {
-        UIElement* oldFocusElement = focusElement_;
-        focusElement_.Reset();
-
-        VariantMap& focusEventData = GetEventDataMap();
-        focusEventData[Defocused::P_ELEMENT] = oldFocusElement;
-        oldFocusElement->SendEvent(E_DEFOCUSED, focusEventData);
-    }
-
-    // Then set focus to the new
-    if (element && element->GetFocusMode() >= FM_FOCUSABLE)
-    {
-        focusElement_ = element;
-
-        VariantMap& focusEventData = GetEventDataMap();
-        focusEventData[Focused::P_ELEMENT] = element;
-        focusEventData[Focused::P_BYKEY] = byKey;
-        element->SendEvent(E_FOCUSED, focusEventData);
-    }
-
-    VariantMap& eventData = GetEventDataMap();
-    eventData[P_CLICKEDELEMENT] = originalElement;
-    eventData[P_ELEMENT] = element;
-    SendEvent(E_FOCUSCHANGED, eventData);
-}
-
-bool UI::SetModalElement(UIElement* modalElement, bool enable)
-{
-    if (!modalElement)
-        return false;
-
-    // Currently only allow modal window
-    if (modalElement->GetType() != Window::GetTypeStatic())
-        return false;
-
-    assert(rootModalElement_);
-    UIElement* currParent = modalElement->GetParent();
-    if (enable)
-    {
-        // Make sure it is not already the child of the root modal element
-        if (currParent == rootModalElement_)
-            return false;
-
-        // Adopt modal root as parent
-        modalElement->SetVar(VAR_ORIGINAL_PARENT, currParent);
-        modalElement->SetVar(VAR_ORIGINAL_CHILD_INDEX, currParent ? currParent->FindChild(modalElement) : M_MAX_UNSIGNED);
-        modalElement->SetParent(rootModalElement_);
-
-        // If it is a popup element, bring along its top-level parent
-        UIElement* originElement = static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGIN).GetPtr());
-        if (originElement)
-        {
-            UIElement* element = originElement;
-            while (element && element->GetParent() != rootElement_)
-                element = element->GetParent();
-            if (element)
-            {
-                originElement->SetVar(VAR_PARENT_CHANGED, element);
-                UIElement* oriParent = element->GetParent();
-                element->SetVar(VAR_ORIGINAL_PARENT, oriParent);
-                element->SetVar(VAR_ORIGINAL_CHILD_INDEX, oriParent ? oriParent->FindChild(element) : M_MAX_UNSIGNED);
-                element->SetParent(rootModalElement_);
-            }
-        }
-
-        return true;
-    }
-    else
-    {
-        // Only the modal element can disable itself
-        if (currParent != rootModalElement_)
-            return false;
-
-        // Revert back to original parent
-        modalElement->SetParent(static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGINAL_PARENT).GetPtr()),
-            modalElement->GetVar(VAR_ORIGINAL_CHILD_INDEX).GetUInt());
-        VariantMap& vars = const_cast<VariantMap&>(modalElement->GetVars());
-        vars.Erase(VAR_ORIGINAL_PARENT);
-        vars.Erase(VAR_ORIGINAL_CHILD_INDEX);
-
-        // If it is a popup element, revert back its top-level parent
-        UIElement* originElement = static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGIN).GetPtr());
-        if (originElement)
-        {
-            UIElement* element = static_cast<UIElement*>(originElement->GetVar(VAR_PARENT_CHANGED).GetPtr());
-            if (element)
-            {
-                const_cast<VariantMap&>(originElement->GetVars()).Erase(VAR_PARENT_CHANGED);
-                element->SetParent(static_cast<UIElement*>(element->GetVar(VAR_ORIGINAL_PARENT).GetPtr()),
-                    element->GetVar(VAR_ORIGINAL_CHILD_INDEX).GetUInt());
-                vars = const_cast<VariantMap&>(element->GetVars());
-                vars.Erase(VAR_ORIGINAL_PARENT);
-                vars.Erase(VAR_ORIGINAL_CHILD_INDEX);
-            }
-        }
-
-        return true;
-    }
-}
-
-void UI::Clear()
-{
-    rootElement_->RemoveAllChildren();
-    rootModalElement_->RemoveAllChildren();
-    if (cursor_)
-        rootElement_->AddChild(cursor_);
-}
-
-void UI::Update(float timeStep)
-{
-    assert(rootElement_ && rootModalElement_);
-
-    PROFILE(UpdateUI);
-
-    // Expire hovers
-    for (HashMap<WeakPtr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End(); ++i)
-        i->second_ = false;
-
-    Input* input = GetSubsystem<Input>();
-    bool mouseGrabbed = input->IsMouseGrabbed();
-
-    IntVector2 cursorPos;
-    bool cursorVisible;
-    GetCursorPositionAndVisible(cursorPos, cursorVisible);
-
-    // Drag begin based on time
-    if (dragElementsCount_ > 0 && !mouseGrabbed)
-    {
-        for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
-        {
-            WeakPtr<UIElement> dragElement = i->first_;
-            UI::DragData* dragData = i->second_;
-
-            if (!dragElement)
-            {
-                i = DragElementErase(i);
-                continue;
-            }
-
-            if (!dragData->dragBeginPending)
-            {
-                ++i;
-                continue;
-            }
-
-            if (dragData->dragBeginTimer.GetMSec(false) >= (unsigned)(dragBeginInterval_ * 1000))
-            {
-                dragData->dragBeginPending = false;
-                IntVector2 beginSendPos = dragData->dragBeginSumPos / dragData->numDragButtons;
-                dragConfirmedCount_++;
-                if (!usingTouchInput_)
-                    dragElement->OnDragBegin(dragElement->ScreenToElement(beginSendPos), beginSendPos, dragData->dragButtons,
-                        qualifiers_, cursor_);
-                else
-                    dragElement->OnDragBegin(dragElement->ScreenToElement(beginSendPos), beginSendPos, dragData->dragButtons, 0, 0);
-
-                SendDragOrHoverEvent(E_DRAGBEGIN, dragElement, beginSendPos, IntVector2::ZERO, dragData);
-            }
-
-            ++i;
-        }
-    }
-
-    // Mouse hover
-    if (!mouseGrabbed && !input->GetTouchEmulation())
-    {
-        if (!usingTouchInput_ && cursorVisible)
-            ProcessHover(cursorPos, mouseButtons_, qualifiers_, cursor_);
-    }
-
-    // Touch hover
-    unsigned numTouches = input->GetNumTouches();
-    for (unsigned i = 0; i < numTouches; ++i)
-    {
-        TouchState* touch = input->GetTouch(i);
-        ProcessHover(touch->position_, TOUCHID_MASK(touch->touchID_), 0, 0);
-    }
-
-    // End hovers that expired without refreshing
-    for (HashMap<WeakPtr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End();)
-    {
-        if (i->first_.Expired() || !i->second_)
-        {
-            UIElement* element = i->first_;
-            if (element)
-            {
-                using namespace HoverEnd;
-
-                VariantMap& eventData = GetEventDataMap();
-                eventData[P_ELEMENT] = element;
-                element->SendEvent(E_HOVEREND, eventData);
-            }
-            i = hoveredElements_.Erase(i);
-        }
-        else
-            ++i;
-    }
-
-    Update(timeStep, rootElement_);
-    Update(timeStep, rootModalElement_);
-}
-
-void UI::RenderUpdate()
-{
-    assert(rootElement_ && rootModalElement_ && graphics_);
-
-    PROFILE(GetUIBatches);
-
-    uiRendered_ = false;
-
-    // If the OS cursor is visible, do not render the UI's own cursor
-    bool osCursorVisible = GetSubsystem<Input>()->IsMouseVisible();
-
-    // Get rendering batches from the non-modal UI elements
-    batches_.Clear();
-    vertexData_.Clear();
-    const IntVector2& rootSize = rootElement_->GetSize();
-    IntRect currentScissor = IntRect(0, 0, rootSize.x_, rootSize.y_);
-    if (rootElement_->IsVisible())
-        GetBatches(rootElement_, currentScissor);
-
-    // Save the batch size of the non-modal batches for later use
-    nonModalBatchSize_ = batches_.Size();
-
-    // Get rendering batches from the modal UI elements
-    GetBatches(rootModalElement_, currentScissor);
-
-    // Get batches from the cursor (and its possible children) last to draw it on top of everything
-    if (cursor_ && cursor_->IsVisible() && !osCursorVisible)
-    {
-        currentScissor = IntRect(0, 0, rootSize.x_, rootSize.y_);
-        cursor_->GetBatches(batches_, vertexData_, currentScissor);
-        GetBatches(cursor_, currentScissor);
-    }
-}
-
-void UI::Render(bool resetRenderTargets)
-{
-    // Perform the default render only if not rendered yet
-    if (resetRenderTargets && uiRendered_)
-        return;
-
-    PROFILE(RenderUI);
-
-    // If the OS cursor is visible, apply its shape now if changed
-    bool osCursorVisible = GetSubsystem<Input>()->IsMouseVisible();
-    if (cursor_ && osCursorVisible)
-        cursor_->ApplyOSCursorShape();
-
-    SetVertexData(vertexBuffer_, vertexData_);
-    SetVertexData(debugVertexBuffer_, debugVertexData_);
-
-    // Render non-modal batches
-    Render(resetRenderTargets, vertexBuffer_, batches_, 0, nonModalBatchSize_);
-    // Render debug draw
-    Render(resetRenderTargets, debugVertexBuffer_, debugDrawBatches_, 0, debugDrawBatches_.Size());
-    // Render modal batches
-    Render(resetRenderTargets, vertexBuffer_, batches_, nonModalBatchSize_, batches_.Size());
-
-    // Clear the debug draw batches and data
-    debugDrawBatches_.Clear();
-    debugVertexData_.Clear();
-
-    uiRendered_ = true;
-}
-
-void UI::DebugDraw(UIElement* element)
-{
-    if (element)
-    {
-        const IntVector2& rootSize = rootElement_->GetSize();
-        element->GetDebugDrawBatches(debugDrawBatches_, debugVertexData_, IntRect(0, 0, rootSize.x_, rootSize.y_));
-    }
-}
-
-SharedPtr<UIElement> UI::LoadLayout(Deserializer& source, XMLFile* styleFile)
-{
-    SharedPtr<XMLFile> xml(new XMLFile(context_));
-    if (!xml->Load(source))
-        return SharedPtr<UIElement>();
-    else
-        return LoadLayout(xml, styleFile);
-}
-
-SharedPtr<UIElement> UI::LoadLayout(XMLFile* file, XMLFile* styleFile)
-{
-    PROFILE(LoadUILayout);
-
-    SharedPtr<UIElement> root;
-
-    if (!file)
-    {
-        LOGERROR("Null UI layout XML file");
-        return root;
-    }
-
-    LOGDEBUG("Loading UI layout " + file->GetName());
-
-    XMLElement rootElem = file->GetRoot("element");
-    if (!rootElem)
-    {
-        LOGERROR("No root UI element in " + file->GetName());
-        return root;
-    }
-
-    String typeName = rootElem.GetAttribute("type");
-    if (typeName.Empty())
-        typeName = "UIElement";
-
-    root = DynamicCast<UIElement>(context_->CreateObject(typeName));
-    if (!root)
-    {
-        LOGERROR("Could not create unknown UI element " + typeName);
-        return root;
-    }
-
-    // Use default style file of the root element if it has one
-    if (!styleFile)
-        styleFile = rootElement_->GetDefaultStyle(false);
-    // Set it as default for later use by children elements
-    if (styleFile)
-        root->SetDefaultStyle(styleFile);
-
-    root->LoadXML(rootElem, styleFile);
-    return root;
-}
-
-bool UI::SaveLayout(Serializer& dest, UIElement* element)
-{
-    PROFILE(SaveUILayout);
-
-    return element && element->SaveXML(dest);
-}
-
-void UI::SetClipboardText(const String& text)
-{
-    clipBoard_ = text;
-    if (useSystemClipboard_)
-        SDL_SetClipboardText(text.CString());
-}
-
-void UI::SetDoubleClickInterval(float interval)
-{
-    doubleClickInterval_ = Max(interval, 0.0f);
-}
-
-void UI::SetDragBeginInterval(float interval)
-{
-    dragBeginInterval_ = Max(interval, 0.0f);
-}
-
-void UI::SetDragBeginDistance(int pixels)
-{
-    dragBeginDistance_ = Max(pixels, 0);
-}
-
-void UI::SetDefaultToolTipDelay(float delay)
-{
-    defaultToolTipDelay_ = Max(delay, 0.0f);
-}
-
-void UI::SetMaxFontTextureSize(int size)
-{
-    if (IsPowerOfTwo((unsigned)size) && size >= FONT_TEXTURE_MIN_SIZE)
-    {
-        if (size != maxFontTextureSize_)
-        {
-            maxFontTextureSize_ = size;
-            ReleaseFontFaces();
-        }
-    }
-}
-
-void UI::SetNonFocusedMouseWheel(bool nonFocusedMouseWheel)
-{
-    nonFocusedMouseWheel_ = nonFocusedMouseWheel;
-}
-
-void UI::SetUseSystemClipboard(bool enable)
-{
-    useSystemClipboard_ = enable;
-}
-
-void UI::SetUseScreenKeyboard(bool enable)
-{
-    useScreenKeyboard_ = enable;
-}
-
-void UI::SetUseMutableGlyphs(bool enable)
-{
-    if (enable != useMutableGlyphs_)
-    {
-        useMutableGlyphs_ = enable;
-        ReleaseFontFaces();
-    }
-}
-
-void UI::SetForceAutoHint(bool enable)
-{
-    if (enable != forceAutoHint_)
-    {
-        forceAutoHint_ = enable;
-        ReleaseFontFaces();
-    }
-}
-
-IntVector2 UI::GetCursorPosition() const
-{
-    return cursor_ ? cursor_->GetPosition() : GetSubsystem<Input>()->GetMousePosition();
-}
-
-UIElement* UI::GetElementAt(const IntVector2& position, bool enabledOnly)
-{
-    UIElement* result = 0;
-    GetElementAt(result, HasModalElement() ? rootModalElement_ : rootElement_, position, enabledOnly);
-    return result;
-}
-
-UIElement* UI::GetElementAt(int x, int y, bool enabledOnly)
-{
-    return GetElementAt(IntVector2(x, y), enabledOnly);
-}
-
-UIElement* UI::GetFrontElement() const
-{
-    const Vector<SharedPtr<UIElement> >& rootChildren = rootElement_->GetChildren();
-    int maxPriority = M_MIN_INT;
-    UIElement* front = 0;
-
-    for (unsigned i = 0; i < rootChildren.Size(); ++i)
-    {
-        // Do not take into account input-disabled elements, hidden elements or those that are always in the front
-        if (!rootChildren[i]->IsEnabled() || !rootChildren[i]->IsVisible() || !rootChildren[i]->GetBringToBack())
-            continue;
-
-        int priority = rootChildren[i]->GetPriority();
-        if (priority > maxPriority)
-        {
-            maxPriority = priority;
-            front = rootChildren[i];
-        }
-    }
-
-    return front;
-}
-
-const Vector<UIElement*> UI::GetDragElements()
-{
-    // Do not return the element until drag begin event has actually been posted
-    if (!dragElementsConfirmed_.Empty())
-        return dragElementsConfirmed_;
-
-    for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
-    {
-        WeakPtr<UIElement> dragElement = i->first_;
-        UI::DragData* dragData = i->second_;
-
-        if (!dragElement)
-        {
-            i = DragElementErase(i);
-            continue;
-        }
-
-        if (!dragData->dragBeginPending)
-            dragElementsConfirmed_.Push(dragElement);
-
-        ++i;
-    }
-
-    return dragElementsConfirmed_;
-}
-
-UIElement* UI::GetDragElement(unsigned index)
-{
-    GetDragElements();
-    if (index >= dragElementsConfirmed_.Size())
-        return (UIElement*)0;
-
-    return dragElementsConfirmed_[index];
-}
-
-const String& UI::GetClipboardText() const
-{
-    if (useSystemClipboard_)
-    {
-        char* text = SDL_GetClipboardText();
-        clipBoard_ = String(text);
-        if (text)
-            SDL_free(text);
-    }
-
-    return clipBoard_;
-}
-
-bool UI::HasModalElement() const
-{
-    return rootModalElement_->GetNumChildren() > 0;
-}
-
-void UI::Initialize()
-{
-    Graphics* graphics = GetSubsystem<Graphics>();
-
-    if (!graphics || !graphics->IsInitialized())
-        return;
-
-    PROFILE(InitUI);
-
-    graphics_ = graphics;
-    UIBatch::posAdjust = Vector3(Graphics::GetPixelUVOffset(), 0.0f);
-
-    rootElement_->SetSize(graphics->GetWidth(), graphics->GetHeight());
-    rootModalElement_->SetSize(rootElement_->GetSize());
-
-    vertexBuffer_ = new VertexBuffer(context_);
-    debugVertexBuffer_ = new VertexBuffer(context_);
-
-    initialized_ = true;
-
-    SubscribeToEvent(E_BEGINFRAME, HANDLER(UI, HandleBeginFrame));
-    SubscribeToEvent(E_POSTUPDATE, HANDLER(UI, HandlePostUpdate));
-    SubscribeToEvent(E_RENDERUPDATE, HANDLER(UI, HandleRenderUpdate));
-
-    LOGINFO("Initialized user interface");
-}
-
-void UI::Update(float timeStep, UIElement* element)
-{
-    // Keep a weak pointer to the element in case it destroys itself on update
-    WeakPtr<UIElement> elementWeak(element);
-
-    element->Update(timeStep);
-    if (elementWeak.Expired())
-        return;
-
-    const Vector<SharedPtr<UIElement> >& children = element->GetChildren();
-    // Update of an element may modify its child vector. Use just index-based iteration to be safe
-    for (unsigned i = 0; i < children.Size(); ++i)
-        Update(timeStep, children[i]);
-}
-
-void UI::SetVertexData(VertexBuffer* dest, const PODVector<float>& vertexData)
-{
-    if (vertexData.Empty())
-        return;
-
-    // Update quad geometry into the vertex buffer
-    // Resize the vertex buffer first if too small or much too large
-    unsigned numVertices = vertexData.Size() / UI_VERTEX_SIZE;
-    if (dest->GetVertexCount() < numVertices || dest->GetVertexCount() > numVertices * 2)
-        dest->SetSize(numVertices, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1, true);
-
-    dest->SetData(&vertexData[0]);
-}
-
-void UI::Render(bool resetRenderTargets, VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigned batchStart,
-    unsigned batchEnd)
-{
-    // Engine does not render when window is closed or device is lost
-    assert(graphics_ && graphics_->IsInitialized() && !graphics_->IsDeviceLost());
-
-    if (batches.Empty())
-        return;
-
-    Vector2 invScreenSize(1.0f / (float)graphics_->GetWidth(), 1.0f / (float)graphics_->GetHeight());
-    Vector2 scale(2.0f * invScreenSize.x_, -2.0f * invScreenSize.y_);
-    Vector2 offset(-1.0f, 1.0f);
-
-    Matrix4 projection(Matrix4::IDENTITY);
-    projection.m00_ = scale.x_;
-    projection.m03_ = offset.x_;
-    projection.m11_ = scale.y_;
-    projection.m13_ = offset.y_;
-    projection.m22_ = 1.0f;
-    projection.m23_ = 0.0f;
-    projection.m33_ = 1.0f;
-
-    graphics_->ClearParameterSources();
-    graphics_->SetColorWrite(true);
-    graphics_->SetCullMode(CULL_CCW);
-    graphics_->SetDepthTest(CMP_ALWAYS);
-    graphics_->SetDepthWrite(false);
-    graphics_->SetFillMode(FILL_SOLID);
-    graphics_->SetStencilTest(false);
-    if (resetRenderTargets)
-        graphics_->ResetRenderTargets();
-    graphics_->SetVertexBuffer(buffer);
-
-    ShaderVariation* noTextureVS = graphics_->GetShader(VS, "Basic", "VERTEXCOLOR");
-    ShaderVariation* diffTextureVS = graphics_->GetShader(VS, "Basic", "DIFFMAP VERTEXCOLOR");
-    ShaderVariation* noTexturePS = graphics_->GetShader(PS, "Basic", "VERTEXCOLOR");
-    ShaderVariation* diffTexturePS = graphics_->GetShader(PS, "Basic", "DIFFMAP VERTEXCOLOR");
-    ShaderVariation* diffMaskTexturePS = graphics_->GetShader(PS, "Basic", "DIFFMAP ALPHAMASK VERTEXCOLOR");
-    ShaderVariation* alphaTexturePS = graphics_->GetShader(PS, "Basic", "ALPHAMAP VERTEXCOLOR");
-
-    unsigned alphaFormat = Graphics::GetAlphaFormat();
-
-    for (unsigned i = batchStart; i < batchEnd; ++i)
-    {
-        const UIBatch& batch = batches[i];
-        if (batch.vertexStart_ == batch.vertexEnd_)
-            continue;
-
-        ShaderVariation* ps;
-        ShaderVariation* vs;
-
-        if (!batch.texture_)
-        {
-            ps = noTexturePS;
-            vs = noTextureVS;
-        }
-        else
-        {
-            // If texture contains only an alpha channel, use alpha shader (for fonts)
-            vs = diffTextureVS;
-
-            if (batch.texture_->GetFormat() == alphaFormat)
-                ps = alphaTexturePS;
-            else if (batch.blendMode_ != BLEND_ALPHA && batch.blendMode_ != BLEND_ADDALPHA && batch.blendMode_ != BLEND_PREMULALPHA)
-                ps = diffMaskTexturePS;
-            else
-                ps = diffTexturePS;
-        }
-
-        graphics_->SetShaders(vs, ps);
-        if (graphics_->NeedParameterUpdate(SP_OBJECT, this))
-            graphics_->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
-        if (graphics_->NeedParameterUpdate(SP_CAMERA, this))
-            graphics_->SetShaderParameter(VSP_VIEWPROJ, projection);
-        if (graphics_->NeedParameterUpdate(SP_MATERIAL, this))
-            graphics_->SetShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
-
-        graphics_->SetBlendMode(batch.blendMode_);
-        graphics_->SetScissorTest(true, batch.scissor_);
-        graphics_->SetTexture(0, batch.texture_);
-        graphics_->Draw(TRIANGLE_LIST, batch.vertexStart_ / UI_VERTEX_SIZE,
-            (batch.vertexEnd_ - batch.vertexStart_) / UI_VERTEX_SIZE);
-    }
-}
-
-void UI::GetBatches(UIElement* element, IntRect currentScissor)
-{
-    // Set clipping scissor for child elements. No need to draw if zero size
-    element->AdjustScissor(currentScissor);
-    if (currentScissor.left_ == currentScissor.right_ || currentScissor.top_ == currentScissor.bottom_)
-        return;
-
-    element->SortChildren();
-    const Vector<SharedPtr<UIElement> >& children = element->GetChildren();
-    if (children.Empty())
-        return;
-
-    // For non-root elements draw all children of same priority before recursing into their children: assumption is that they have
-    // same renderstate
-    Vector<SharedPtr<UIElement> >::ConstIterator i = children.Begin();
-    if (element->GetTraversalMode() == TM_BREADTH_FIRST)
-    {
-        Vector<SharedPtr<UIElement> >::ConstIterator j = i;
-        while (i != children.End())
-        {
-            int currentPriority = (*i)->GetPriority();
-            while (j != children.End() && (*j)->GetPriority() == currentPriority)
-            {
-                if ((*j)->IsWithinScissor(currentScissor) && (*j) != cursor_)
-                    (*j)->GetBatches(batches_, vertexData_, currentScissor);
-                ++j;
-            }
-            // Now recurse into the children
-            while (i != j)
-            {
-                if ((*i)->IsVisible() && (*i) != cursor_)
-                    GetBatches(*i, currentScissor);
-                ++i;
-            }
-        }
-    }
-    // On the root level draw each element and its children immediately after to avoid artifacts
-    else
-    {
-        while (i != children.End())
-        {
-            if ((*i) != cursor_)
-            {
-                if ((*i)->IsWithinScissor(currentScissor))
-                    (*i)->GetBatches(batches_, vertexData_, currentScissor);
-                if ((*i)->IsVisible())
-                    GetBatches(*i, currentScissor);
-            }
-            ++i;
-        }
-    }
-}
-
-void UI::GetElementAt(UIElement*& result, UIElement* current, const IntVector2& position, bool enabledOnly)
-{
-    if (!current)
-        return;
-
-    current->SortChildren();
-    const Vector<SharedPtr<UIElement> >& children = current->GetChildren();
-    LayoutMode parentLayoutMode = current->GetLayoutMode();
-
-    for (unsigned i = 0; i < children.Size(); ++i)
-    {
-        UIElement* element = children[i];
-        bool hasChildren = element->GetNumChildren() > 0;
-
-        if (element != cursor_.Get() && element->IsVisible())
-        {
-            if (element->IsInside(position, true))
-            {
-                // Store the current result, then recurse into its children. Because children
-                // are sorted from lowest to highest priority, the topmost match should remain
-                if (element->IsEnabled() || !enabledOnly)
-                    result = element;
-
-                if (hasChildren)
-                    GetElementAt(result, element, position, enabledOnly);
-                // Layout optimization: if the element has no children, can break out after the first match
-                else if (parentLayoutMode != LM_FREE)
-                    break;
-            }
-            else
-            {
-                if (hasChildren)
-                {
-                    if (element->IsInsideCombined(position, true))
-                        GetElementAt(result, element, position, enabledOnly);
-                }
-                // Layout optimization: if position is much beyond the visible screen, check how many elements we can skip,
-                // or if we already passed all visible elements
-                else if (parentLayoutMode != LM_FREE)
-                {
-                    if (!i)
-                    {
-                        int screenPos = (parentLayoutMode == LM_HORIZONTAL) ? element->GetScreenPosition().x_ :
-                            element->GetScreenPosition().y_;
-                        int layoutMaxSize = current->GetLayoutMaxSize();
-
-                        if (screenPos < 0 && layoutMaxSize > 0)
-                        {
-                            unsigned toSkip = (unsigned)(-screenPos / layoutMaxSize);
-                            if (toSkip > 0)
-                                i += (toSkip - 1);
-                        }
-                    }
-                    else if (parentLayoutMode == LM_HORIZONTAL)
-                    {
-                        if (element->GetScreenPosition().x_ >= rootElement_->GetSize().x_)
-                            break;
-                    }
-                    else if (parentLayoutMode == LM_VERTICAL)
-                    {
-                        if (element->GetScreenPosition().y_ >= rootElement_->GetSize().y_)
-                            break;
-                    }
-                }
-            }
-        }
-    }
-}
-
-UIElement* UI::GetFocusableElement(UIElement* element)
-{
-    while (element)
-    {
-        if (element->GetFocusMode() != FM_NOTFOCUSABLE)
-            break;
-        element = element->GetParent();
-    }
-    return element;
-}
-
-void UI::GetCursorPositionAndVisible(IntVector2& pos, bool& visible)
-{
-    // Prefer software cursor then OS-specific cursor
-    if (cursor_ && cursor_->IsVisible())
-    {
-        pos = cursor_->GetPosition();
-        visible = true;
-    }
-    else if (GetSubsystem<Input>()->GetMouseMode() == MM_RELATIVE)
-        visible = true;
-    else
-    {
-        Input* input = GetSubsystem<Input>();
-        pos = input->GetMousePosition();
-        visible = input->IsMouseVisible();
-
-        if (!visible && cursor_)
-            pos = cursor_->GetPosition();
-    }
-}
-
-void UI::SetCursorShape(CursorShape shape)
-{
-    if (cursor_)
-        cursor_->SetShape(shape);
-}
-
-void UI::ReleaseFontFaces()
-{
-    LOGDEBUG("Reloading font faces");
-
-    PODVector<Font*> fonts;
-    GetSubsystem<ResourceCache>()->GetResources<Font>(fonts);
-
-    for (unsigned i = 0; i < fonts.Size(); ++i)
-        fonts[i]->ReleaseFaces();
-}
-
-void UI::ProcessHover(const IntVector2& cursorPos, int buttons, int qualifiers, Cursor* cursor)
-{
-    WeakPtr<UIElement> element(GetElementAt(cursorPos));
-
-    for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
-    {
-        WeakPtr<UIElement> dragElement = i->first_;
-        UI::DragData* dragData = i->second_;
-
-        if (!dragElement)
-        {
-            i = DragElementErase(i);
-            continue;
-        }
-
-        bool dragSource = dragElement && (dragElement->GetDragDropMode() & DD_SOURCE) != 0;
-        bool dragTarget = element && (element->GetDragDropMode() & DD_TARGET) != 0;
-        bool dragDropTest = dragSource && dragTarget && element != dragElement;
-        // If drag start event has not been posted yet, do not do drag handling here
-        if (dragData->dragBeginPending)
-            dragSource = dragTarget = dragDropTest = false;
-
-        // Hover effect
-        // If a drag is going on, transmit hover only to the element being dragged, unless it's a drop target
-        if (element && element->IsEnabled())
-        {
-            if (dragElement == element || dragDropTest)
-            {
-                element->OnHover(element->ScreenToElement(cursorPos), cursorPos, buttons, qualifiers, cursor);
-
-                // Begin hover event
-                if (!hoveredElements_.Contains(element))
-                {
-                    SendDragOrHoverEvent(E_HOVERBEGIN, element, cursorPos, IntVector2::ZERO, 0);
-                    // Exit if element is destroyed by the event handling
-                    if (!element)
-                        return;
-                }
-                hoveredElements_[element] = true;
-            }
-        }
-
-        // Drag and drop test
-        if (dragDropTest)
-        {
-            bool accept = element->OnDragDropTest(dragElement);
-            if (accept)
-            {
-                using namespace DragDropTest;
-
-                VariantMap& eventData = GetEventDataMap();
-                eventData[P_SOURCE] = dragElement.Get();
-                eventData[P_TARGET] = element.Get();
-                eventData[P_ACCEPT] = accept;
-                SendEvent(E_DRAGDROPTEST, eventData);
-                accept = eventData[P_ACCEPT].GetBool();
-            }
-
-            if (cursor)
-                cursor->SetShape(accept ? CS_ACCEPTDROP : CS_REJECTDROP);
-        }
-        else if (dragSource && cursor)
-            cursor->SetShape(dragElement == element ? CS_ACCEPTDROP : CS_REJECTDROP);
-
-        ++i;
-    }
-
-    // Hover effect
-    // If no drag is going on, transmit hover event.
-    if (element && element->IsEnabled())
-    {
-        if (dragElementsCount_ == 0)
-        {
-            element->OnHover(element->ScreenToElement(cursorPos), cursorPos, buttons, qualifiers, cursor);
-
-            // Begin hover event
-            if (!hoveredElements_.Contains(element))
-            {
-                SendDragOrHoverEvent(E_HOVERBEGIN, element, cursorPos, IntVector2::ZERO, 0);
-                // Exit if element is destroyed by the event handling
-                if (!element)
-                    return;
-            }
-            hoveredElements_[element] = true;
-        }
-    }
-}
-
-void UI::ProcessClickBegin(const IntVector2& cursorPos, int button, int buttons, int qualifiers, Cursor* cursor, bool cursorVisible)
-{
-    if (cursorVisible)
-    {
-        WeakPtr<UIElement> element(GetElementAt(cursorPos));
-
-        bool newButton;
-        if (usingTouchInput_)
-            newButton = (button & buttons) == 0;
-        else
-            newButton = true;
-        buttons |= button;
-
-        if (element)
-            SetFocusElement(element);
-
-        // Focus change events may destroy the element, check again.
-        if (element)
-        {
-            // Handle focusing & bringing to front
-            element->BringToFront();
-
-            // Handle click
-            element->OnClickBegin(element->ScreenToElement(cursorPos), cursorPos, button, buttons, qualifiers, cursor);
-            SendClickEvent(E_UIMOUSECLICK, NULL, element, cursorPos, button, buttons, qualifiers);
-
-            // Fire double click event if element matches and is in time
-            if (doubleClickElement_ && element == doubleClickElement_ &&
-                clickTimer_.GetMSec(true) < (unsigned)(doubleClickInterval_ * 1000) && lastMouseButtons_ == buttons)
-            {
-                element->OnDoubleClick(element->ScreenToElement(cursorPos), cursorPos, button, buttons, qualifiers, cursor);
-                doubleClickElement_.Reset();
-                SendClickEvent(E_UIMOUSEDOUBLECLICK, NULL, element, cursorPos, button, buttons, qualifiers);
-            }
-            else
-            {
-                doubleClickElement_ = element;
-                clickTimer_.Reset();
-            }
-
-            // Handle start of drag. Click handling may have caused destruction of the element, so check the pointer again
-            bool dragElementsContain = dragElements_.Contains(element);
-            if (element && !dragElementsContain)
-            {
-                DragData* dragData = new DragData();
-                dragElements_[element] = dragData;
-                dragData->dragBeginPending = true;
-                dragData->sumPos = cursorPos;
-                dragData->dragBeginSumPos = cursorPos;
-                dragData->dragBeginTimer.Reset();
-                dragData->dragButtons = button;
-                dragData->numDragButtons = CountSetBits((unsigned)dragData->dragButtons);
-                dragElementsCount_++;
-
-                dragElementsContain = dragElements_.Contains(element);
-            }
-            else if (element && dragElementsContain && newButton)
-            {
-                DragData* dragData = dragElements_[element];
-                dragData->sumPos += cursorPos;
-                dragData->dragBeginSumPos += cursorPos;
-                dragData->dragButtons |= button;
-                dragData->numDragButtons = CountSetBits((unsigned)dragData->dragButtons);
-            }
-        }
-        else
-        {
-            // If clicked over no element, or a disabled element, lose focus (but not if there is a modal element)
-            if (!HasModalElement())
-                SetFocusElement(0);
-            SendClickEvent(E_UIMOUSECLICK, NULL, element, cursorPos, button, buttons, qualifiers);
-        }
-
-        lastMouseButtons_ = buttons;
-    }
-}
-
-void UI::ProcessClickEnd(const IntVector2& cursorPos, int button, int buttons, int qualifiers, Cursor* cursor, bool cursorVisible)
-{
-    if (cursorVisible)
-    {
-        WeakPtr<UIElement> element(GetElementAt(cursorPos));
-
-        // Handle end of drag
-        for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
-        {
-            WeakPtr<UIElement> dragElement = i->first_;
-            UI::DragData* dragData = i->second_;
-
-            if (!dragElement)
-            {
-                i = DragElementErase(i);
-                continue;
-            }
-
-            if (dragData->dragButtons & button)
-            {
-                // Handle end of click
-                if (element)
-                    element->OnClickEnd(element->ScreenToElement(cursorPos), cursorPos, button, buttons, qualifiers, cursor,
-                        dragElement);
-
-                SendClickEvent(E_UIMOUSECLICKEND, dragElement, element, cursorPos, button, buttons, qualifiers);
-
-                if (dragElement && dragElement->IsEnabled() && dragElement->IsVisible() && !dragData->dragBeginPending)
-                {
-                    dragElement->OnDragEnd(dragElement->ScreenToElement(cursorPos), cursorPos, dragData->dragButtons, buttons,
-                        cursor);
-                    SendDragOrHoverEvent(E_DRAGEND, dragElement, cursorPos, IntVector2::ZERO, dragData);
-
-                    bool dragSource = dragElement && (dragElement->GetDragDropMode() & DD_SOURCE) != 0;
-                    if (dragSource)
-                    {
-                        bool dragTarget = element && (element->GetDragDropMode() & DD_TARGET) != 0;
-                        bool dragDropFinish = dragSource && dragTarget && element != dragElement;
-
-                        if (dragDropFinish)
-                        {
-                            bool accept = element->OnDragDropFinish(dragElement);
-
-                            // OnDragDropFinish() may have caused destruction of the elements, so check the pointers again
-                            if (accept && dragElement && element)
-                            {
-                                using namespace DragDropFinish;
-
-                                VariantMap& eventData = GetEventDataMap();
-                                eventData[P_SOURCE] = dragElement.Get();
-                                eventData[P_TARGET] = element.Get();
-                                eventData[P_ACCEPT] = accept;
-                                SendEvent(E_DRAGDROPFINISH, eventData);
-                            }
-                        }
-                    }
-                }
-
-                i = DragElementErase(i);
-            }
-            else
-                ++i;
-        }
-    }
-}
-
-void UI::ProcessMove(const IntVector2& cursorPos, const IntVector2& cursorDeltaPos, int buttons, int qualifiers, Cursor* cursor,
-    bool cursorVisible)
-{
-    if (cursorVisible && dragElementsCount_ > 0 && buttons)
-    {
-        Input* input = GetSubsystem<Input>();
-        bool mouseGrabbed = input->IsMouseGrabbed();
-        for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
-        {
-            WeakPtr<UIElement> dragElement = i->first_;
-            UI::DragData* dragData = i->second_;
-
-            if (!dragElement)
-            {
-                i = DragElementErase(i);
-                continue;
-            }
-
-            if (!(dragData->dragButtons & buttons))
-            {
-                ++i;
-                continue;
-            }
-
-            // Calculate the position that we should send for this drag event.
-            IntVector2 sendPos;
-            if (usingTouchInput_)
-            {
-                dragData->sumPos += cursorDeltaPos;
-                sendPos.x_ = dragData->sumPos.x_ / dragData->numDragButtons;
-                sendPos.y_ = dragData->sumPos.y_ / dragData->numDragButtons;
-            }
-            else
-            {
-                dragData->sumPos = cursorPos;
-                sendPos = cursorPos;
-            }
-
-            if (dragElement->IsEnabled() && dragElement->IsVisible())
-            {
-                // Signal drag begin if distance threshold was exceeded
-
-                if (dragData->dragBeginPending && !mouseGrabbed)
-                {
-                    IntVector2 beginSendPos;
-                    beginSendPos.x_ = dragData->dragBeginSumPos.x_ / dragData->numDragButtons;
-                    beginSendPos.y_ = dragData->dragBeginSumPos.y_ / dragData->numDragButtons;
-
-                    IntVector2 offset = cursorPos - beginSendPos;
-                    if (Abs(offset.x_) >= dragBeginDistance_ || Abs(offset.y_) >= dragBeginDistance_)
-                    {
-                        dragData->dragBeginPending = false;
-                        dragConfirmedCount_++;
-                        dragElement->OnDragBegin(dragElement->ScreenToElement(beginSendPos), beginSendPos, buttons, qualifiers,
-                            cursor);
-                        SendDragOrHoverEvent(E_DRAGBEGIN, dragElement, beginSendPos, IntVector2::ZERO, dragData);
-                    }
-                }
-
-                if (!dragData->dragBeginPending)
-                {
-                    dragElement->OnDragMove(dragElement->ScreenToElement(sendPos), sendPos, cursorDeltaPos, buttons, qualifiers,
-                        cursor);
-                    SendDragOrHoverEvent(E_DRAGMOVE, dragElement, sendPos, cursorDeltaPos, dragData);
-                }
-            }
-            else
-            {
-                dragElement->OnDragEnd(dragElement->ScreenToElement(sendPos), sendPos, dragData->dragButtons, buttons, cursor);
-                SendDragOrHoverEvent(E_DRAGEND, dragElement, sendPos, IntVector2::ZERO, dragData);
-                dragElement.Reset();
-            }
-
-            ++i;
-        }
-    }
-}
-
-void UI::SendDragOrHoverEvent(StringHash eventType, UIElement* element, const IntVector2& screenPos, const IntVector2& deltaPos,
-    UI::DragData* dragData)
-{
-    if (!element)
-        return;
-
-    IntVector2 relativePos = element->ScreenToElement(screenPos);
-
-    using namespace DragMove;
-
-    VariantMap& eventData = GetEventDataMap();
-    eventData[P_ELEMENT] = element;
-    eventData[P_X] = screenPos.x_;
-    eventData[P_Y] = screenPos.y_;
-    eventData[P_ELEMENTX] = relativePos.x_;
-    eventData[P_ELEMENTY] = relativePos.y_;
-
-    if (eventType == E_DRAGMOVE)
-    {
-        eventData[P_DX] = deltaPos.x_;
-        eventData[P_DY] = deltaPos.y_;
-    }
-
-    if (dragData)
-    {
-        eventData[P_BUTTONS] = dragData->dragButtons;
-        eventData[P_NUMBUTTONS] = dragData->numDragButtons;
-    }
-
-    element->SendEvent(eventType, eventData);
-}
-
-void UI::SendClickEvent(StringHash eventType, UIElement* beginElement, UIElement* endElement, const IntVector2& pos, int button,
-    int buttons, int qualifiers)
-{
-    VariantMap& eventData = GetEventDataMap();
-    eventData[UIMouseClick::P_ELEMENT] = endElement;
-    eventData[UIMouseClick::P_X] = pos.x_;
-    eventData[UIMouseClick::P_Y] = pos.y_;
-    eventData[UIMouseClick::P_BUTTON] = button;
-    eventData[UIMouseClick::P_BUTTONS] = buttons;
-    eventData[UIMouseClick::P_QUALIFIERS] = qualifiers;
-
-    // For click end events, send also the element the click began on
-    if (eventType == E_UIMOUSECLICKEND)
-        eventData[UIMouseClickEnd::P_BEGINELEMENT] = beginElement;
-
-    SendEvent(eventType, eventData);
-}
-
-void UI::HandleScreenMode(StringHash eventType, VariantMap& eventData)
-{
-    using namespace ScreenMode;
-
-    if (!initialized_)
-        Initialize();
-    else
-    {
-        rootElement_->SetSize(eventData[P_WIDTH].GetInt(), eventData[P_HEIGHT].GetInt());
-        rootModalElement_->SetSize(rootElement_->GetSize());
-    }
-}
-
-void UI::HandleMouseButtonDown(StringHash eventType, VariantMap& eventData)
-{
-    using namespace MouseButtonDown;
-
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
-    usingTouchInput_ = false;
-
-    IntVector2 cursorPos;
-    bool cursorVisible;
-    GetCursorPositionAndVisible(cursorPos, cursorVisible);
-
-    // Handle drag cancelling
-    ProcessDragCancel();
-
-    Input* input = GetSubsystem<Input>();
-
-    if (!input->IsMouseGrabbed())
-        ProcessClickBegin(cursorPos, eventData[P_BUTTON].GetInt(), mouseButtons_, qualifiers_, cursor_, cursorVisible);
-}
-
-void UI::HandleMouseButtonUp(StringHash eventType, VariantMap& eventData)
-{
-    using namespace MouseButtonUp;
-
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
-
-    IntVector2 cursorPos;
-    bool cursorVisible;
-    GetCursorPositionAndVisible(cursorPos, cursorVisible);
-
-    ProcessClickEnd(cursorPos, eventData[P_BUTTON].GetInt(), mouseButtons_, qualifiers_, cursor_, cursorVisible);
-}
-
-void UI::HandleMouseMove(StringHash eventType, VariantMap& eventData)
-{
-    using namespace MouseMove;
-
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
-    usingTouchInput_ = false;
-
-    Input* input = GetSubsystem<Input>();
-    const IntVector2& rootSize = rootElement_->GetSize();
-
-    IntVector2 DeltaP = IntVector2(eventData[P_DX].GetInt(), eventData[P_DY].GetInt());
-
-    if (cursor_)
-    {
-        if (!input->IsMouseVisible())
-        {
-            // Relative mouse motion: move cursor only when visible
-            if (cursor_->IsVisible())
-            {
-                IntVector2 pos = cursor_->GetPosition();
-                pos.x_ += eventData[P_DX].GetInt();
-                pos.y_ += eventData[P_DY].GetInt();
-                pos.x_ = Clamp(pos.x_, 0, rootSize.x_ - 1);
-                pos.y_ = Clamp(pos.y_, 0, rootSize.y_ - 1);
-                cursor_->SetPosition(pos);
-            }
-        }
-        else
-        {
-            // Absolute mouse motion: move always
-            cursor_->SetPosition(IntVector2(eventData[P_X].GetInt(), eventData[P_Y].GetInt()));
-        }
-    }
-
-    IntVector2 cursorPos;
-    bool cursorVisible;
-    GetCursorPositionAndVisible(cursorPos, cursorVisible);
-
-    ProcessMove(cursorPos, DeltaP, mouseButtons_, qualifiers_, cursor_, cursorVisible);
-}
-
-void UI::HandleMouseWheel(StringHash eventType, VariantMap& eventData)
-{
-    Input* input = GetSubsystem<Input>();
-    if (input->IsMouseGrabbed())
-        return;
-
-    using namespace MouseWheel;
-
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
-    int delta = eventData[P_WHEEL].GetInt();
-    usingTouchInput_ = false;
-
-    IntVector2 cursorPos;
-    bool cursorVisible;
-    GetCursorPositionAndVisible(cursorPos, cursorVisible);
-
-    UIElement* element;
-    if (!nonFocusedMouseWheel_ && (element = focusElement_))
-        element->OnWheel(delta, mouseButtons_, qualifiers_);
-    else
-    {
-        // If no element has actual focus or in non-focused mode, get the element at cursor
-        if (cursorVisible)
-        {
-            element = GetElementAt(cursorPos);
-            if (nonFocusedMouseWheel_)
-            {
-                // Going up the hierarchy chain to find element that could handle mouse wheel
-                while (element)
-                {
-                    if (element->GetType() == ListView::GetTypeStatic() ||
-                        element->GetType() == ScrollView::GetTypeStatic())
-                        break;
-                    element = element->GetParent();
-                }
-            }
-            else
-                // If the element itself is not focusable, search for a focusable parent,
-                // although the focusable element may not actually handle mouse wheel
-                element = GetFocusableElement(element);
-
-            if (element && (nonFocusedMouseWheel_ || element->GetFocusMode() >= FM_FOCUSABLE))
-                element->OnWheel(delta, mouseButtons_, qualifiers_);
-        }
-    }
-}
-
-void UI::HandleTouchBegin(StringHash eventType, VariantMap& eventData)
-{
-    Input* input = GetSubsystem<Input>();
-    if (input->IsMouseGrabbed())
-        return;
-
-    using namespace TouchBegin;
-
-    IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-    usingTouchInput_ = true;
-
-    int touchId = TOUCHID_MASK(eventData[P_TOUCHID].GetInt());
-    WeakPtr<UIElement> element(GetElementAt(pos));
-
-    if (element)
-    {
-        ProcessClickBegin(pos, touchId, touchDragElements_[element], 0, 0, true);
-        touchDragElements_[element] |= touchId;
-    }
-    else
-        ProcessClickBegin(pos, touchId, touchId, 0, 0, true);
-}
-
-void UI::HandleTouchEnd(StringHash eventType, VariantMap& eventData)
-{
-    using namespace TouchEnd;
-
-    IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-
-    // Get the touch index
-    int touchId = TOUCHID_MASK(eventData[P_TOUCHID].GetInt());
-
-    // Transmit hover end to the position where the finger was lifted
-    WeakPtr<UIElement> element(GetElementAt(pos));
-
-    // Clear any drag events that were using the touch id
-    for (HashMap<WeakPtr<UIElement>, int>::Iterator i = touchDragElements_.Begin(); i != touchDragElements_.End();)
-    {
-        int touches = i->second_;
-        if (touches & touchId)
-            i = touchDragElements_.Erase(i);
-        else
-            ++i;
-    }
-
-    if (element && element->IsEnabled())
-        element->OnHover(element->ScreenToElement(pos), pos, 0, 0, 0);
-
-    ProcessClickEnd(pos, touchId, 0, 0, 0, true);
-}
-
-void UI::HandleTouchMove(StringHash eventType, VariantMap& eventData)
-{
-    using namespace TouchMove;
-
-    IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-    IntVector2 deltaPos(eventData[P_DX].GetInt(), eventData[P_DY].GetInt());
-    usingTouchInput_ = true;
-
-    int touchId = TOUCHID_MASK(eventData[P_TOUCHID].GetInt());
-
-    ProcessMove(pos, deltaPos, touchId, 0, 0, true);
-}
-
-void UI::HandleKeyDown(StringHash eventType, VariantMap& eventData)
-{
-    using namespace KeyDown;
-
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
-    int key = eventData[P_KEY].GetInt();
-
-    // Cancel UI dragging
-    if (key == KEY_ESC && dragElementsCount_ > 0)
-    {
-        ProcessDragCancel();
-
-        return;
-    }
-
-    // Dismiss modal element if any when ESC key is pressed
-    if (key == KEY_ESC && HasModalElement())
-    {
-        UIElement* element = rootModalElement_->GetChild(rootModalElement_->GetNumChildren() - 1);
-        if (element->GetVars().Contains(VAR_ORIGIN))
-            // If it is a popup, dismiss by defocusing it
-            SetFocusElement(0);
-        else
-        {
-            // If it is a modal window, by resetting its modal flag
-            Window* window = dynamic_cast<Window*>(element);
-            if (window && window->GetModalAutoDismiss())
-                window->SetModal(false);
-        }
-
-        return;
-    }
-
-    UIElement* element = focusElement_;
-    if (element)
-    {
-        // Switch focus between focusable elements in the same top level window
-        if (key == KEY_TAB)
-        {
-            UIElement* topLevel = element->GetParent();
-            while (topLevel && topLevel->GetParent() != rootElement_ && topLevel->GetParent() != rootModalElement_)
-                topLevel = topLevel->GetParent();
-            if (topLevel)
-            {
-                topLevel->GetChildren(tempElements_, true);
-                for (PODVector<UIElement*>::Iterator i = tempElements_.Begin(); i != tempElements_.End();)
-                {
-                    if ((*i)->GetFocusMode() < FM_FOCUSABLE)
-                        i = tempElements_.Erase(i);
-                    else
-                        ++i;
-                }
-                for (unsigned i = 0; i < tempElements_.Size(); ++i)
-                {
-                    if (tempElements_[i] == element)
-                    {
-                        int dir = (qualifiers_ & QUAL_SHIFT) ? -1 : 1;
-                        unsigned nextIndex = (tempElements_.Size() + i + dir) % tempElements_.Size();
-                        UIElement* next = tempElements_[nextIndex];
-                        SetFocusElement(next, true);
-                        return;
-                    }
-                }
-            }
-        }
-        // Defocus the element
-        else if (key == KEY_ESC && element->GetFocusMode() == FM_FOCUSABLE_DEFOCUSABLE)
-            element->SetFocus(false);
-        // If none of the special keys, pass the key to the focused element
-        else
-            element->OnKey(key, mouseButtons_, qualifiers_);
-    }
-}
-
-void UI::HandleTextInput(StringHash eventType, VariantMap& eventData)
-{
-    using namespace TextInput;
-
-    mouseButtons_ = eventData[P_BUTTONS].GetInt();
-    qualifiers_ = eventData[P_QUALIFIERS].GetInt();
-
-    UIElement* element = focusElement_;
-    if (element)
-        element->OnTextInput(eventData[P_TEXT].GetString(), mouseButtons_, qualifiers_);
-}
-
-void UI::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
-{
-    // If have a cursor, and a drag is not going on, reset the cursor shape. Application logic that wants to apply
-    // custom shapes can do it after this, but needs to do it each frame
-    if (cursor_ && dragElementsCount_ == 0)
-        cursor_->SetShape(CS_NORMAL);
-}
-
-void UI::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
-{
-    using namespace PostUpdate;
-
-    Update(eventData[P_TIMESTEP].GetFloat());
-}
-
-void UI::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
-{
-    RenderUpdate();
-}
-
-void UI::HandleDropFile(StringHash eventType, VariantMap& eventData)
-{
-    Input* input = GetSubsystem<Input>();
-
-    // Sending the UI variant of the event only makes sense if the OS cursor is visible (not locked to window center)
-    if (input->IsMouseVisible())
-    {
-        IntVector2 screenPos = input->GetMousePosition();
-        UIElement* element = GetElementAt(screenPos);
-
-        using namespace UIDropFile;
-
-        VariantMap uiEventData;
-        uiEventData[P_FILENAME] = eventData[P_FILENAME];
-        uiEventData[P_X] = screenPos.x_;
-        uiEventData[P_Y] = screenPos.y_;
-        uiEventData[P_ELEMENT] = element;
-
-        if (element)
-        {
-            IntVector2 relativePos = element->ScreenToElement(screenPos);
-            uiEventData[P_ELEMENTX] = relativePos.x_;
-            uiEventData[P_ELEMENTY] = relativePos.y_;
-        }
-
-        SendEvent(E_UIDROPFILE, uiEventData);
-    }
-}
-
-HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator UI::DragElementErase(HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i)
-{
-    // If running the engine frame in response to an event (re-entering UI frame logic) the dragElements_ may already be empty
-    if (dragElements_.Empty())
-        return dragElements_.End();
-
-    dragElementsConfirmed_.Clear();
-
-    DragData* dragData = i->second_;
-
-    if (!dragData->dragBeginPending)
-        --dragConfirmedCount_;
-    i = dragElements_.Erase(i);
-    --dragElementsCount_;
-
-    delete dragData;
-    return i;
-}
-
-void UI::ProcessDragCancel()
-{
-    // How to tell difference between drag cancel and new selection on multi-touch?
-    if (usingTouchInput_)
-        return;
-
-    IntVector2 cursorPos;
-    bool cursorVisible;
-    GetCursorPositionAndVisible(cursorPos, cursorVisible);
-
-    for (HashMap<WeakPtr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
-    {
-        WeakPtr<UIElement> dragElement = i->first_;
-        UI::DragData* dragData = i->second_;
-
-        if (dragElement && dragElement->IsEnabled() && dragElement->IsVisible() && !dragData->dragBeginPending)
-        {
-            dragElement->OnDragCancel(dragElement->ScreenToElement(cursorPos), cursorPos, dragData->dragButtons, mouseButtons_,
-                cursor_);
-            SendDragOrHoverEvent(E_DRAGCANCEL, dragElement, cursorPos, IntVector2::ZERO, dragData);
-            i = DragElementErase(i);
-        }
-        else
-            ++i;
-    }
-}
-
-IntVector2 UI::SumTouchPositions(UI::DragData* dragData, const IntVector2& oldSendPos)
-{
-    IntVector2 sendPos = oldSendPos;
-    if (usingTouchInput_)
-    {
-        int buttons = dragData->dragButtons;
-        dragData->sumPos = IntVector2::ZERO;
-        Input* input = GetSubsystem<Input>();
-        for (int i = 0; (1 << i) <= buttons; i++)
-        {
-            if ((1 << i) & buttons)
-            {
-                TouchState* ts = input->GetTouch((unsigned)i);
-                if (!ts)
-                    break;
-                IntVector2 pos = ts->position_;
-                dragData->sumPos.x_ += pos.x_;
-                dragData->sumPos.y_ += pos.y_;
-            }
-        }
-        sendPos.x_ = dragData->sumPos.x_ / dragData->numDragButtons;
-        sendPos.y_ = dragData->sumPos.y_ / dragData->numDragButtons;
-    }
-    return sendPos;
-}
-
-void RegisterUILibrary(Context* context)
-{
-    Font::RegisterObject(context);
-
-    UIElement::RegisterObject(context);
-    BorderImage::RegisterObject(context);
-    Sprite::RegisterObject(context);
-    Button::RegisterObject(context);
-    CheckBox::RegisterObject(context);
-    Cursor::RegisterObject(context);
-    Text::RegisterObject(context);
-    Text3D::RegisterObject(context);
-    Window::RegisterObject(context);
-    View3D::RegisterObject(context);
-    LineEdit::RegisterObject(context);
-    Slider::RegisterObject(context);
-    ScrollBar::RegisterObject(context);
-    ScrollView::RegisterObject(context);
-    ListView::RegisterObject(context);
-    Menu::RegisterObject(context);
-    DropDownList::RegisterObject(context);
-    FileSelector::RegisterObject(context);
-    MessageBox::RegisterObject(context);
-    ToolTip::RegisterObject(context);
-}
-
+#define ToImVec2(v) ImVec2(v.x_,v.y_)
+#define ToImVec4(v) ImVec4(v.x_,v.y_,v.z_,v.w_)
+
+	static IMUIContext* g_imuiContext = NULL;
+	static const char* ImGui_GetClipboardText()
+	{
+		return "";
+	}
+
+	static void ImGui_SetClipboardText(const char* text)
+	{
+	}
+	// This is the main rendering function that you have to implement and provide to ImGui (via setting up 'RenderDrawListsFn' in the ImGuiIO structure)
+	// If text or lines are blurry when integrating ImGui in your engine:
+	// - in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
+	static void ImGui_RenderDrawLists(ImDrawData* data)
+	{
+		if (g_imuiContext)
+		{
+			g_imuiContext->RenderDrawLists(data);
+		}
+	}
+
+	IMUIContext::IMUIContext(Context* context) : Object(context),
+		initialized_(false),
+		debugMenu_(false),
+		graphics_(NULL),
+		input_(NULL),
+		fontTexture_(NULL)
+
+	{
+		SubscribeToEvent(E_SCREENMODE, HANDLER(IMUIContext, HandleScreenMode));
+		// Try to initialize right now, but skip if screen mode is not yet set
+		Initialize();
+		g_imuiContext = this;
+	}
+
+	IMUIContext::~IMUIContext()
+	{
+		Shutdown();
+	}
+
+	void IMUIContext::ShowDebugMenuBar(bool show)
+	{
+		debugMenu_ = show;
+	}
+
+	bool IMUIContext::BeginWindow(const char* name /*= "Debug"*/, bool* p_opened /*= NULL*/, ImGuiWindowFlags flags /*= 0*/)
+	{
+		return ImGui::Begin(name, p_opened, flags);
+	}
+
+	void IMUIContext::EndWindow()
+	{
+		ImGui::End();
+	}
+
+	bool IMUIContext::BeginChildWindow(const char* str_id, const Vector2& size /*= ImVec2(0, 0)*/, bool border /*= false*/, ImGuiWindowFlags extra_flags /*= 0*/)
+	{
+		return ImGui::BeginChild(str_id, ToImVec2(size), border, extra_flags);
+	}
+
+	bool IMUIContext::BeginChildWindow(ImGuiID id, const Vector2& size /*= ImVec2(0, 0)*/, bool border /*= false*/, ImGuiWindowFlags extra_flags /*= 0*/)
+	{
+		return ImGui::BeginChild(id, ToImVec2(size), border, extra_flags);
+	}
+
+	void IMUIContext::EndChildWindow()
+	{
+		ImGui::EndChild();
+	}
+
+	void IMUIContext::SetTooltip(const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args, fmt);
+		ImGui::SetTooltipV(fmt, args);
+		va_end(args);
+	}
+
+	void IMUIContext::BeginTooltip()
+	{
+		ImGui::BeginTooltip();
+	}
+
+	void IMUIContext::EndTooltip()
+	{
+		ImGui::EndTooltip();
+	}
+
+	void IMUIContext::OpenPopup(const char* str_id)
+	{
+		ImGui::OpenPopup(str_id);
+	}
+
+	bool IMUIContext::BeginPopup(const char* str_id)
+	{
+		return ImGui::BeginPopup(str_id);
+	}
+
+	bool IMUIContext::BeginPopupContextItem(const char* str_id, int button /*= 1*/)
+	{
+		return ImGui::BeginPopupContextItem(str_id, button);
+	}
+
+	bool IMUIContext::BeginPopupContextWindow(bool in_empty_space_only /*= false*/, const char* str_id /*= "window_context_menu"*/, int button /*= 1*/)
+	{
+		return ImGui::BeginPopupContextWindow(in_empty_space_only, str_id, button);
+	}
+
+	bool IMUIContext::BeginPopupContextVoid(const char* str_id /*= "void_context_menu"*/, int button /*= 1*/)
+	{
+		return ImGui::BeginPopupContextVoid(str_id, button);
+	}
+
+	void IMUIContext::EndPopup()
+	{
+		ImGui::EndPopup();
+	}
+
+	void IMUIContext::CloseCurrentPopup()
+	{
+		ImGui::CloseCurrentPopup();
+	}
+
+	void IMUIContext::Text(const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args, fmt);
+		ImGui::TextV(fmt, args);
+		va_end(args);
+	}
+
+	void IMUIContext::TextColored(const Vector4& col, const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args, fmt);
+		ImGui::TextColoredV(ToImVec4(col), fmt, args);
+		va_end(args);
+	}
+
+	void IMUIContext::TextDisabled(const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args, fmt);
+		ImGui::TextDisabledV(fmt, args);
+		va_end(args);
+	}
+
+	void IMUIContext::TextWrapped(const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args, fmt);
+		ImGui::TextWrappedV(fmt, args);
+		va_end(args);
+	}
+
+	void IMUIContext::TextUnformatted(const char* text, const char* text_end /*= NULL*/)
+	{
+		ImGui::TextUnformatted(text, text_end);
+	}
+
+	void IMUIContext::LabelText(const char* label, const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args, fmt);
+		ImGui::LabelText(label, fmt, args);
+		va_end(args);
+	}
+
+	void IMUIContext::Bullet()
+	{
+		ImGui::Bullet();
+	}
+
+	void IMUIContext::BulletText(const char* fmt, ...)
+	{
+		va_list args;
+		va_start(args, fmt);
+		ImGui::BulletText(fmt, args);
+		va_end(args);
+	}
+
+	bool IMUIContext::Button(const char* label, const Vector2& size /*= Vector2::ZERO*/)
+	{
+		return ImGui::Button(label, ToImVec2(size));
+	}
+
+	bool IMUIContext::SmallButton(const char* label)
+	{
+		return ImGui::SmallButton(label);
+	}
+
+	bool IMUIContext::InvisibleButton(const char* str_id, const Vector2& size)
+	{
+		return ImGui::InvisibleButton(str_id, ToImVec2(size));
+	}
+
+	void IMUIContext::Image(ImTextureID user_texture_id, const Vector2& size, const Vector2& uv0 /*= Vector2::ZERO*/, const Vector2& uv1 /*= Vector2(1, 1)*/, const Vector4& tint_col /*= Vector4(1, 1, 1, 1)*/, const Vector4& border_col /*= Vector4(0, 0, 0, 0)*/)
+	{
+		ImGui::Image(user_texture_id, ToImVec2(size), ToImVec2(uv0), ToImVec2(uv1), ToImVec4(tint_col), ToImVec4(border_col));
+	}
+
+	bool IMUIContext::ImageButton(ImTextureID user_texture_id, const Vector2& size, const Vector2& uv0 /*= Vector2::ZERO*/, const Vector2& uv1 /*= Vector2(1, 1)*/, int frame_padding /*= -1*/, const Vector4& bg_col /*= Vector4(0, 0, 0, 1)*/, const Vector4& tint_col /*= Vector4(1, 1, 1, 1)*/)
+	{
+		return ImGui::ImageButton(user_texture_id, ToImVec2(size), ToImVec2(uv0), ToImVec2(uv1), frame_padding, ToImVec4(bg_col), ToImVec4(tint_col));
+	}
+
+	bool IMUIContext::CollapsingHeader(const char* label, const char* str_id /*= NULL*/, bool display_frame /*= true*/, bool default_open /*= false*/)
+	{
+		return ImGui::CollapsingHeader(label, str_id, display_frame, default_open);
+	}
+
+	bool IMUIContext::Checkbox(const char* label, bool* v)
+	{
+		return ImGui::Checkbox(label, v);
+	}
+
+	bool IMUIContext::CheckboxFlags(const char* label, unsigned int* flags, unsigned int flags_value)
+	{
+		return ImGui::CheckboxFlags(label, flags, flags_value);
+	}
+
+	bool IMUIContext::RadioButton(const char* label, bool active)
+	{
+		return ImGui::RadioButton(label, active);
+	}
+
+	bool IMUIContext::RadioButton(const char* label, int* v, int v_button)
+	{
+		return ImGui::RadioButton(label, v, v_button);
+	}
+
+	bool IMUIContext::Combo(const char* label, int* current_item, const char** items, int items_count, int height_in_items /*= -1*/)
+	{
+		return ImGui::Combo(label, current_item, items, items_count, height_in_items);
+	}
+
+	bool IMUIContext::Combo(const char* label, int* current_item, const char* items_separated_by_zeros, int height_in_items /*= -1*/)
+	{
+		return ImGui::Combo(label, current_item, items_separated_by_zeros, height_in_items);
+	}
+
+	bool IMUIContext::Combo(const char* label, int* current_item, bool(*items_getter)(void* data, int idx, const char** out_text), void* data, int items_count, int height_in_items /*= -1*/)
+	{
+		return ImGui::Combo(label, current_item, items_getter, data, items_count, height_in_items);
+	}
+
+	bool IMUIContext::ColorButton(const Vector4& col, bool small_height /*= false*/, bool outline_border /*= true*/)
+	{
+		return ImGui::ColorButton(ToImVec4(col), small_height, outline_border);
+	}
+
+	bool IMUIContext::ColorEdit3(const char* label, float col[3])
+	{
+		return ImGui::ColorEdit3(label, col);
+	}
+
+	bool IMUIContext::ColorEdit4(const char* label, float col[4], bool show_alpha /*= true*/)
+	{
+		return ImGui::ColorEdit4(label, col, show_alpha);
+	}
+
+	void IMUIContext::ColorEditMode(ImGuiColorEditMode mode)
+	{
+		ImGui::ColorEditMode(mode);
+	}
+
+	void IMUIContext::PlotLines(const char* label, const float* values, int values_count, int values_offset /*= 0*/, const char* overlay_text /*= NULL*/, float scale_min /*= FLT_MAX*/, float scale_max /*= FLT_MAX*/, Vector2 graph_size /*= Vector2::ZERO*/, size_t stride /*= sizeof(float)*/)
+	{
+		ImGui::PlotLines(label, values, values_count, values_offset, overlay_text, scale_min, scale_max, ToImVec2(graph_size), stride);
+	}
+
+	void IMUIContext::PlotLines(const char* label, float(*values_getter)(void* data, int idx), void* data, int values_count, int values_offset /*= 0*/, const char* overlay_text /*= NULL*/, float scale_min /*= FLT_MAX*/, float scale_max /*= FLT_MAX*/, Vector2 graph_size /*= Vector2::ZERO*/)
+	{
+		ImGui::PlotLines(label, values_getter, data, values_count, values_offset, overlay_text, scale_min, scale_max, ToImVec2(graph_size));
+	}
+
+	void IMUIContext::PlotHistogram(const char* label, const float* values, int values_count, int values_offset /*= 0*/, const char* overlay_text /*= NULL*/, float scale_min /*= FLT_MAX*/, float scale_max /*= FLT_MAX*/, Vector2 graph_size /*= Vector2::ZERO*/, size_t stride /*= sizeof(float)*/)
+	{
+		ImGui::PlotHistogram(label, values, values_count, values_offset, overlay_text, scale_min, scale_max, ToImVec2(graph_size), stride);
+	}
+
+	void IMUIContext::PlotHistogram(const char* label, float(*values_getter)(void* data, int idx), void* data, int values_count, int values_offset /*= 0*/, const char* overlay_text /*= NULL*/, float scale_min /*= FLT_MAX*/, float scale_max /*= FLT_MAX*/, Vector2 graph_size /*= Vector2::ZERO*/)
+	{
+		ImGui::PlotHistogram(label, values_getter, data, values_count, values_offset, overlay_text, scale_min, scale_max, ToImVec2(graph_size));
+	}
+
+	void IMUIContext::Initialize()
+	{
+		Graphics* graphics = GetSubsystem<Graphics>();
+		if (!graphics || !graphics->IsInitialized())
+			return;
+		graphics_ = graphics;
+		screenSize_ = IntRect(0, 0, graphics->GetWidth(), graphics->GetHeight());
+		vertexBuffer_ = new VertexBuffer(context_);
+		indexBuffer_ = new IndexBuffer(context_);
+		input_ = GetSubsystem<Input>();
+		SubscribeToEvent(E_BEGINFRAME, HANDLER(IMUIContext, HandleBeginFrame));
+		SubscribeToEvent(E_ENDRENDERING, HANDLER(IMUIContext, HandleEndRendering));
+
+		//////////////////////////////////////////////////////////////////////////
+		/// init imgui
+		ImGuiIO& io = ImGui::GetIO();
+		io.KeyMap[ImGuiKey_Tab] = SCANCODE_TAB;                 // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
+		io.KeyMap[ImGuiKey_LeftArrow] = SCANCODE_LEFT;
+		io.KeyMap[ImGuiKey_RightArrow] = SCANCODE_RIGHT;
+		io.KeyMap[ImGuiKey_UpArrow] = SCANCODE_UP;
+		io.KeyMap[ImGuiKey_DownArrow] = SCANCODE_DOWN;
+		io.KeyMap[ImGuiKey_Home] = SCANCODE_HOME;
+		io.KeyMap[ImGuiKey_End] = SCANCODE_END;
+		io.KeyMap[ImGuiKey_Delete] = SCANCODE_DELETE;
+		io.KeyMap[ImGuiKey_Backspace] = SCANCODE_BACKSPACE;
+		io.KeyMap[ImGuiKey_Enter] = SCANCODE_RETURN;
+		io.KeyMap[ImGuiKey_Escape] = SCANCODE_ESCAPE;
+		io.KeyMap[ImGuiKey_A] = SCANCODE_A;
+		io.KeyMap[ImGuiKey_C] = SCANCODE_C;
+		io.KeyMap[ImGuiKey_V] = SCANCODE_V;
+		io.KeyMap[ImGuiKey_X] = SCANCODE_X;
+		io.KeyMap[ImGuiKey_Y] = SCANCODE_Y;
+		io.KeyMap[ImGuiKey_Z] = SCANCODE_Z;
+
+		io.RenderDrawListsFn = ImGui_RenderDrawLists;
+		io.SetClipboardTextFn = ImGui_SetClipboardText;
+		io.GetClipboardTextFn = ImGui_GetClipboardText;
+
+
+		unsigned char* pixels;
+		int width, height;
+		io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
+		fontTexture_ = new Texture2D(context_);
+		SharedPtr<Urho3D::Image> image(new Urho3D::Image(context_));
+		image->SetSize(width, height, 4);
+		image->SetData(pixels);
+		fontTexture_->SetData(image, false);
+		// Store our identifier
+		io.Fonts->TexID = (void *)(intptr_t)fontTexture_;
+		fontTexture_->SetFilterMode(FILTER_NEAREST);
+		fontTexture_->SetAddressMode(COORD_U, ADDRESS_WRAP);
+		fontTexture_->SetAddressMode(COORD_V, ADDRESS_WRAP);
+		fontTexture_->SetAddressMode(COORD_W, ADDRESS_WRAP);
+		LOGINFO("Initialized ImGUI ");
+	}
+
+	void IMUIContext::Shutdown()
+	{
+		ImGui::Shutdown();
+		if (fontTexture_)
+		{
+			delete fontTexture_;
+			fontTexture_ = NULL;
+		}
+		LOGINFO("Shutdown ImGUI ");
+	}
+
+	void IMUIContext::RenderDebugMenuBar()
+	{
+		static bool show_SystemInfo = false;
+		static bool show_Resources = false;
+		static bool show_Network = false;
+		static bool show_Audio = false;
+		static bool show_UI = false;
+		static bool show_Graphics = false;
+		static bool show_Renderer = false;
+		static bool show_Engine = false;
+		static bool show_Context = false;
+		static bool show_ImGuiStyleEditor = false;
+		static bool show_ImGuiMetricsWindow = false;
+		static bool show_ImGuiUserGuide = false;
+		static bool show_ImGuiTestWindow = false;
+
+		static bool show_CPUProfiler = false;
+		static bool show_GPUProfiler = false;
+		static bool show_Memory = false;
+
+
+		if (show_ImGuiUserGuide)
+		{
+			ImGui::Begin("ImGui User Guide", &show_ImGuiUserGuide);
+			ImGui::ShowUserGuide();
+			ImGui::End();
+		}
+		if (show_ImGuiMetricsWindow)
+			ImGui::ShowMetricsWindow(&show_ImGuiMetricsWindow);
+		if (show_ImGuiTestWindow)
+			ImGui::ShowTestWindow(&show_ImGuiTestWindow);
+		if (show_ImGuiStyleEditor)
+		{
+			ImGui::Begin("ImGui Style Editor", &show_ImGuiStyleEditor);
+			ImGui::ShowStyleEditor();
+			ImGui::End();
+		}
+
+		if (show_Engine)
+			ShowEngineInfo(&show_Engine);
+		if (show_Context)
+			ShowContextInfo(&show_Context);
+		if (show_Graphics)
+			ShowGraphicsInfo(&show_Graphics);
+		if (show_Renderer)
+			ShowRendererInfo(&show_Renderer);
+		if (show_Resources)
+			ShowResourcesInfo(&show_Resources);
+		if (show_Network)
+			ShowNetworkInfo(&show_Network);
+		if (show_Audio)
+			ShowAudioInfo(&show_Audio);
+		if (show_SystemInfo)
+			ShowSystemInfo(&show_SystemInfo);
+
+		if (show_CPUProfiler)
+			ShowCPUProfilerkInfo(&show_CPUProfiler);
+		if (show_GPUProfiler)
+			ShowGPUProfilerInfo(&show_GPUProfiler);
+		if (show_Memory)
+			ShowMemoryInfo(&show_Memory);
+
+		if (ImGui::BeginMainMenuBar())
+		{
+			if (ImGui::BeginMenu("Debug"))
+			{
+				if (ImGui::BeginMenu("ImGui"))
+				{
+					ImGui::MenuItem("UserGuide", "", &show_ImGuiUserGuide);
+					ImGui::MenuItem("MetricsWindow", "", &show_ImGuiMetricsWindow);
+					ImGui::MenuItem("TestWindow", "", &show_ImGuiTestWindow);
+					ImGui::MenuItem("StyleEditor", "", &show_ImGuiStyleEditor);
+					ImGui::EndMenu();
+				}
+
+				ImGui::Separator();
+				ImGui::MenuItem("System", "", &show_SystemInfo);
+				ImGui::MenuItem("Engine", "", &show_Engine);
+				ImGui::MenuItem("Context", "", &show_Context);
+				ImGui::MenuItem("Graphics", "", &show_Graphics);
+				ImGui::MenuItem("Renderer", "", &show_Renderer);
+				ImGui::MenuItem("Resources", "", &show_Resources);
+				ImGui::MenuItem("Network", "", &show_Network);
+				ImGui::MenuItem("Audio", "", &show_Audio);
+
+
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Profiler"))
+			{
+				ImGui::MenuItem("CPU Profiler", "", &show_CPUProfiler);
+				ImGui::MenuItem("GPU Profiler", "", &show_GPUProfiler);
+				ImGui::MenuItem("Memory", "", &show_Memory);
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMainMenuBar();
+		}
+	}
+
+	void IMUIContext::ShowEngineInfo(bool* opened /*= NULL*/)
+	{
+		Engine* engine = GetSubsystem<Engine>();
+		ImGui::Begin("Urho3D Engine Info", opened);
+
+		ImGui::Value("NextTimeStep", engine->GetNextTimeStep());
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("timestep of the next frame. Updated by ApplyFrameLimit().");
+		ImGui::Value("MinFps", engine->GetMinFps());
+		ImGui::Value("MaxFps", engine->GetMaxFps());
+		ImGui::Value("MaxInactiveFps", engine->GetMaxInactiveFps());
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("maximum frames per second when the application does not have input focus");
+		ImGui::Value("TimeStepSmoothing", engine->GetTimeStepSmoothing());
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("how many frames to average for timestep smoothing");
+		ImGui::Value("PauseMinimized", engine->GetPauseMinimized());
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("whether to pause update events and audio when minimized");
+		ImGui::Value("AutoExit", engine->GetAutoExit());
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("whether to exit automatically on exit request");
+
+		ImGui::End();
+	}
+
+	void IMUIContext::ShowContextInfo(bool* opened /*= NULL*/)
+	{
+
+		ImGui::Begin("Urho3D Context Info", opened);
+
+		if (ImGui::CollapsingHeader("Subsystems"))
+		{
+			const HashMap<StringHash, SharedPtr<Object> >& subsystems = context_->GetSubsystems();
+			const Vector< SharedPtr<Object> >& values = subsystems.Values();
+
+			for (unsigned i = 0; i < values.Size(); i++)
+			{
+				ImGui::BulletText(values[i]->GetTypeName().CString());
+			}
+
+		}
+		if (ImGui::CollapsingHeader("Object Factories"))
+		{
+			const HashMap<String, Vector<StringHash> >& objectCategories = context_->GetObjectCategories();
+			HashMap<String, Vector<StringHash> >::ConstIterator it;
+
+			for (it = objectCategories.Begin(); it != objectCategories.End(); it++)
+			{
+				ImGui::Text(it->first_.CString());
+				for (unsigned i = 0; i < it->second_.Size(); i++)
+				{
+					ImGui::BulletText(context_->GetTypeName(it->second_[i]).CString());
+				}
+			}
+		}
+
+		ImGui::End();
+	}
+
+	void IMUIContext::ShowGraphicsInfo(bool* opened /*= NULL*/)
+	{
+		// 		/// Return supported fullscreen resolutions.
+		// 		PODVector<IntVector2> GetResolutions() const;
+		// 		/// Return supported multisampling levels.
+		// 		PODVector<int> GetMultiSampleLevels() const;
+		// 		/// Return the desktop resolution.
+		// 		IntVector2 GetDesktopResolution() const;
+
+		Graphics* graphics = GetSubsystem<Graphics>();
+		ImGui::Begin("Urho3d Graphics Info", opened);
+		ImGui::Text("Api Name : %s", graphics->GetApiName().CString());
+		ImGui::Value("NumPrimitives", graphics->GetNumPrimitives());
+		ImGui::Value("NumBatches", graphics->GetNumBatches());
+		if (ImGui::CollapsingHeader("Window"))
+		{
+			ImGui::Text("WindowTitle : %s", graphics->GetWindowTitle().CString());
+			ImGui::Text("Window Position : %s", graphics->GetWindowPosition().ToString().CString());
+			ImGui::Text("Window Size : %d %d", graphics->GetWidth(), graphics->GetHeight());
+			ImGui::Value("MultiSample", graphics->GetMultiSample());
+			ImGui::Value("Fullscreen", graphics->GetFullscreen());
+			ImGui::Value("Borderless", graphics->GetBorderless());
+			ImGui::Value("Resizable", graphics->GetResizable());
+			ImGui::Text("Orientations : %s", graphics->GetOrientations().CString());
+		}
+		if (ImGui::CollapsingHeader("Supported Features"))
+		{
+			ImGui::Value("MaxBones", Graphics::GetMaxBones());
+			ImGui::Value("FlushGPU", graphics->GetFlushGPU());
+			ImGui::Value("VSync", graphics->GetVSync());
+			ImGui::Value("TripleBuffer", graphics->GetTripleBuffer());
+			ImGui::Value("SRGB", graphics->GetSRGB());
+			ImGui::Value("InstancingSupport", graphics->GetInstancingSupport());
+			ImGui::Value("LightPrepassSupport", graphics->GetLightPrepassSupport());
+			ImGui::Value("DeferredSupport", graphics->GetDeferredSupport());
+			ImGui::Value("HardwareShadowSupport", graphics->GetHardwareShadowSupport());
+			ImGui::Value("ReadableDepthSupport", graphics->GetReadableDepthSupport());
+			ImGui::Value("SRGBSupport", graphics->GetSRGBSupport());
+			ImGui::Value("SRGBWriteSupport", graphics->GetSRGBWriteSupport());
+		}
+		if (ImGui::CollapsingHeader("Supported Formats"))
+		{
+			ImGui::Value("DummyColorFormat", graphics->GetDummyColorFormat());
+			ImGui::Value("ShadowMapFormat", graphics->GetShadowMapFormat());
+			ImGui::Value("HiresShadowMapFormat", graphics->GetHiresShadowMapFormat());
+		}
+
+		if (ImGui::CollapsingHeader("Other Parameters"))
+		{
+			ImGui::Value("DepthConstantBias", graphics->GetDepthConstantBias());
+			ImGui::Value("DepthSlopeScaledBias", graphics->GetDepthSlopeScaledBias());
+		}
+
+
+
+		ImGui::End();
+	}
+
+	void IMUIContext::ShowRendererInfo(bool* opened /*= NULL*/)
+	{
+
+		Renderer* renderer = GetSubsystem<Renderer>();
+		ImGui::Begin("Urho3d Renderer Info", opened);
+		ImGui::Value("NumViews", renderer->GetNumViews());
+		ImGui::Value("NumPrimitives", renderer->GetNumPrimitives());
+		ImGui::Value("NumBatches", renderer->GetNumBatches());
+		ImGui::Value("NumGeometries", renderer->GetNumGeometries());
+		ImGui::Value("NumLights", renderer->GetNumLights());
+		ImGui::Value("NumShadowMaps", renderer->GetNumShadowMaps());
+		ImGui::Value("NumOccluders", renderer->GetNumOccluders());
+		ImGui::Value("NumViewports", renderer->GetNumViewports());
+		if (ImGui::CollapsingHeader("Other Parameters"))
+		{
+			ImGui::Value("HDRRendering", renderer->GetHDRRendering());
+			ImGui::Value("SpecularLighting", renderer->GetSpecularLighting());
+			ImGui::Value("DynamicInstancing", renderer->GetDynamicInstancing());
+			ImGui::Value("MinInstances", renderer->GetMinInstances());
+			ImGui::Value("MaxSortedInstances", renderer->GetMaxSortedInstances());
+			ImGui::Value("MaxOccluderTriangles", renderer->GetMaxOccluderTriangles());
+			ImGui::Value("OcclusionBufferSize", renderer->GetOcclusionBufferSize());
+			ImGui::Value("OccluderSizeThreshold", renderer->GetOccluderSizeThreshold());
+			ImGui::Value("MobileShadowBiasMul", renderer->GetMobileShadowBiasMul());
+			ImGui::Value("MobileShadowBiasAdd", renderer->GetMobileShadowBiasAdd());
+		}
+		if (ImGui::CollapsingHeader("Texture Shadow Parameters"))
+		{
+			ImGui::Value("TextureAnisotropy", renderer->GetTextureAnisotropy());
+			ImGui::Value("TextureQuality", renderer->GetTextureQuality());
+			ImGui::Value("TextureFilterMode", renderer->GetTextureFilterMode());
+			ImGui::Separator();
+			ImGui::Value("DrawShadows", renderer->GetDrawShadows());
+			ImGui::Value("ShadowMapSize", renderer->GetShadowMapSize());
+			ImGui::Value("ShadowQuality", renderer->GetShadowQuality());
+			ImGui::Value("ReuseShadowMaps", renderer->GetReuseShadowMaps());
+			ImGui::Value("MaxShadowMaps", renderer->GetMaxShadowMaps());
+		}
+
+		if (ImGui::CollapsingHeader("Viewport"))
+		{
+			for (unsigned i = 0; i < renderer->GetNumViewports(); i++)
+			{
+				Viewport* viewport = renderer->GetViewport(i);
+				if (viewport)
+				{
+					ImGui::Text("Rect : %s", viewport->GetRect().ToString().CString());
+					/// \todo scene info 
+					ImGui::Text("Scene : %s", viewport->GetScene() ? viewport->GetScene()->GetName().CString() : "NULL");
+					Camera* cam = viewport->GetCamera();
+					if (cam)
+					{
+						/// \todo camera info 
+						ImGui::Text("Camera : not NULL ^^ ");
+					}
+					else
+						ImGui::Text("Camera : NULL");
+					View* view = viewport->GetView();
+					if (view)
+					{
+
+						/// \todo view info 
+						ImGui::Text("view : not NULL ^^ ");
+					}
+					else
+						ImGui::Text("view : NULL");
+					ImGui::Separator();
+					if (ImGui::TreeNode("RenderPath"))
+					{
+						RenderPath* renderPath = viewport->GetRenderPath();
+						if (renderPath)
+						{
+							ImGui::Value("NumRenderTargets", renderPath->GetNumRenderTargets());
+							ImGui::Value("NumCommands", renderPath->GetNumCommands());
+							for (unsigned i = 0; i < renderPath->GetNumCommands(); i++)
+							{
+								RenderPathCommand* com = renderPath->GetCommand(i);
+								if (com)
+									if (ImGui::TreeNode(String(i).CString()))
+									{
+										ImGui::Text("tag : %s", com->tag_.CString());
+										ImGui::Text("pass : %s", com->pass_.CString());
+										ImGui::Text("DepthStencilName : %s", com->GetDepthStencilName().CString());
+										ImGui::Text("metadata : %s", com->metadata_.CString());
+										ImGui::Text("vertexShaderName : %s", com->vertexShaderName_.CString());
+										ImGui::Text("pixelShaderName : %s", com->pixelShaderName_.CString());
+										ImGui::Text("vertexShaderDefines : %s", com->vertexShaderDefines_.CString());
+										ImGui::Text("pixelShaderDefines : %s", com->pixelShaderDefines_.CString());
+										ImGui::Value("NumOutputs", com->GetNumOutputs());
+										String str;
+										for (unsigned i = 0; i < com->GetNumOutputs(); i++)
+													str.Append(com->GetOutputName(i));
+										
+										ImGui::Text("NumOutputNames : %s", str.CString());
+										ImGui::Separator();
+										ImGui::Value("clearDepth", com->clearDepth_);
+										ImGui::Value("clearStencil", com->clearStencil_);
+										ImGui::Value("enabled", com->enabled_);
+										ImGui::Value("useFogColor", com->useFogColor_);
+										ImGui::Value("markToStencil", com->markToStencil_);
+										ImGui::Value("useLitBase", com->useLitBase_);
+										ImGui::Value("vertexLights", com->vertexLights_);
+
+										ImGui::TreePop();
+									}
+							}
+
+						}
+						ImGui::TreePop();
+					}
+				}
+
+			}
+
+		}
+		if (ImGui::CollapsingHeader("Default RenderPath"))
+		{
+			RenderPath* renderPath = renderer->GetDefaultRenderPath();
+			if (renderPath)
+			{
+				ImGui::Value("NumRenderTargets", renderPath->GetNumRenderTargets());
+				ImGui::Value("NumCommands", renderPath->GetNumCommands());
+				for (unsigned i = 0; i < renderPath->GetNumCommands(); i++)
+				{
+					RenderPathCommand* com = renderPath->GetCommand(i);
+					if (com)
+						if (ImGui::TreeNode(String(i).CString()))
+						{
+							ImGui::Text("tag : %s", com->tag_.CString());
+							ImGui::Text("pass : %s", com->pass_.CString());
+							ImGui::Text("DepthStencilName : %s", com->GetDepthStencilName().CString());
+							ImGui::Text("metadata : %s", com->metadata_.CString());
+							ImGui::Text("vertexShaderName : %s", com->vertexShaderName_.CString());
+							ImGui::Text("pixelShaderName : %s", com->pixelShaderName_.CString());
+							ImGui::Text("vertexShaderDefines : %s", com->vertexShaderDefines_.CString());
+							ImGui::Text("pixelShaderDefines : %s", com->pixelShaderDefines_.CString());
+							ImGui::Value("NumOutputs", com->GetNumOutputs());
+							String str;
+							for (unsigned i = 0; i < com->GetNumOutputs(); i++)
+								str.Append(com->GetOutputName(i));
+							ImGui::Text("NumOutputNames : %s", str.CString());
+							ImGui::Separator();
+							ImGui::Value("clearDepth", com->clearDepth_);
+							ImGui::Value("clearStencil", com->clearStencil_);
+							ImGui::Value("enabled", com->enabled_);
+							ImGui::Value("useFogColor", com->useFogColor_);
+							ImGui::Value("markToStencil", com->markToStencil_);
+							ImGui::Value("useLitBase", com->useLitBase_);
+							ImGui::Value("vertexLights", com->vertexLights_);
+
+							ImGui::TreePop();
+						}
+				}
+
+			}
+
+
+		}
+
+
+
+
+
+
+
+		// 		/// Return backbuffer viewport by index.
+		//		Viewport* GetViewport(unsigned index) const;
+		// 		/// Return default renderpath.
+		// 		RenderPath* GetDefaultRenderPath() const;
+
+
+		ImGui::End();
+	}
+
+	void IMUIContext::ShowResourcesInfo(bool* opened /*= NULL*/)
+	{
+		ResourceCache* cache = GetSubsystem<ResourceCache>();
+		ImGui::Begin("Urho3d ResourceCache Info", opened);
+
+		ImGui::Value("TotalMemoryUse", cache->GetTotalMemoryUse());
+		ImGui::Value("AutoReloadResources", cache->GetAutoReloadResources());
+		ImGui::Value("ReturnFailedResources", cache->GetReturnFailedResources());
+		ImGui::Value("SearchPackagesFirst", cache->GetSearchPackagesFirst());
+		ImGui::Value("FinishBackgroundResourcesMs", cache->GetFinishBackgroundResourcesMs());
+
+		if (ImGui::CollapsingHeader("Resource Dirs"))
+		{
+			/// Return added resource load directories.
+			const Vector<String>& dirs = cache->GetResourceDirs();
+			for (unsigned i = 0; i < dirs.Size(); i++)
+			{
+				ImGui::BulletText(dirs[i].CString());
+			}
+		}
+		if (ImGui::CollapsingHeader("Package Files"))
+		{
+			/// Return added resource load directories.
+			const Vector<SharedPtr<PackageFile> >& packages = cache->GetPackageFiles();
+			for (unsigned i = 0; i < packages.Size(); i++)
+			{
+				ImGui::BulletText(packages[i]->GetName().CString());
+			}
+		}
+
+		/// \todo GetAllResources
+
+		ImGui::End();
+	}
+
+	void IMUIContext::ShowNetworkInfo(bool* opened /*= NULL*/)
+	{
+		Network* network = GetSubsystem<Network>();
+		ImGui::Begin("Urho3d Network Info", opened);
+		ImGui::Value("UpdateFps", network->GetUpdateFps());
+		ImGui::Value("SimulatedLatency", network->GetSimulatedLatency());
+		ImGui::Value("SimulatedPacketLoss", network->GetSimulatedPacketLoss());
+		ImGui::Value("Is Server Running", network->IsServerRunning());
+		ImGui::Text("PackageCacheDir : %s", network->GetPackageCacheDir().CString());
+		ImGui::Text("ServerConnection : %s", (network->GetServerConnection() ? "connected" : "disconnected"));
+		ImGui::Value("GetClientConnections", network->GetClientConnections().Size());
+
+		ImGui::End();
+	}
+
+	void IMUIContext::ShowAudioInfo(bool* opened /*= NULL*/)
+	{
+		Audio* audio = GetSubsystem<Audio>();
+
+
+		ImGui::Begin("Urho3d Audio Info", opened);
+		ImGui::Value("Is Initialized", audio->IsInitialized());
+		ImGui::Value("Is Playing", audio->IsPlaying());
+		ImGui::Value("Is Stereo", audio->IsStereo());
+
+		ImGui::Value("SampleSize", audio->GetSampleSize());
+		ImGui::Value("MixRate", audio->GetMixRate());
+		ImGui::Value("Interpolation", audio->GetInterpolation());
+		ImGui::Value("SoundSources", audio->GetSoundSources().Size());
+
+		ImGui::Value("MASTER Gain", audio->GetMasterGain("MASTER"));
+
+		ImGui::End();
+
+
+	}
+
+	void IMUIContext::ShowSystemInfo(bool* opened /*= NULL*/)
+	{
+		String str;
+		str.Join(GetArguments(), " ,");
+		ImGui::Begin("Urho3d System Info", opened);
+		ImGui::Text("Platform : %s", GetPlatform().CString());
+		ImGui::Value("Num Physical CPUs", GetNumPhysicalCPUs());
+		ImGui::Value("Num Logical CPUs", GetNumLogicalCPUs());
+		ImGui::Text("Parsed Arguments : %s", str.CString());
+		/// \todo more cpu info, gpu info, memory info 
+		ImGui::End();
+
+
+	}
+
+	void IMUIContext::ShowCPUProfilerkInfo(bool* opened /*= NULL*/)
+	{
+		static String profilerOutput("");
+
+		static unsigned intervalFrames_ = 0;
+
+		ImGui::Begin("Urho3d CPU Profiler", opened);
+		Profiler* profiler = GetSubsystem<Profiler>();
+		if (profiler)
+		{
+			if (profilerTimer_.GetMSec(false) >= 1000)
+			{
+				profilerTimer_.Reset();
+				profilerOutput = profiler->GetData(false, false);
+				profiler->BeginInterval();
+				intervalFrames_ = 0;
+			}
+			ImGui::TextWrapped(profilerOutput.CString());
+		}
+		else
+			ImGui::Text(" Profiler is not enabled ! ");
+
+		ImGui::End();
+	}
+
+	void IMUIContext::ShowGPUProfilerInfo(bool* opened /*= NULL*/)
+	{
+		/// \todo gpu profiler
+		ImGui::Begin("Urho3d GPU Profiler", opened);
+		ImGui::Text(" not implemented yet ! :-/ ");
+		ImGui::End();
+	}
+
+	void IMUIContext::ShowMemoryInfo(bool* opened /*= NULL*/)
+	{
+		/// \todo memory profiler
+		ImGui::Begin("Urho3d Memory Profiler", opened);
+		ImGui::Text(" not implemented yet ! :-/ ");
+		ImGui::End();
+	}
+
+	void IMUIContext::HandleScreenMode(StringHash eventType, VariantMap& eventData)
+	{
+		using namespace ScreenMode;
+
+		if (!initialized_)
+			Initialize();
+		else
+		{
+			screenSize_ = IntRect(0, 0, eventData[P_WIDTH].GetInt(), eventData[P_HEIGHT].GetInt());
+		}
+	}
+
+	void IMUIContext::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+	{
+		PROFILE(IMUI_BeginFrame);
+		using namespace BeginFrame;
+		float timeStep = eventData[P_TIMESTEP].GetFloat();
+
+		// Setup display size (every frame to accommodate for window resizing)
+		ImGuiIO& io = ImGui::GetIO();
+		io.DisplaySize = ImVec2((float)graphics_->GetWidth(), (float)graphics_->GetHeight());
+
+		// Setup time step
+		io.DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
+
+		// Setup inputs
+		// (we already got mouse wheel, keyboard keys & characters from glfw callbacks polled in glfwPollEvents())
+		if (input_->IsMouseVisible())
+		{
+			IntVector2 pos = input_->GetMousePosition();
+			io.MousePos = ImVec2((float)pos.x_, (float)pos.y_);   // Mouse position, in pixels (set to -1,-1 if no mouse / on another screen, etc.)
+		}
+		else
+		{
+			io.MousePos = ImVec2(-1, -1);
+		}
+
+		io.MouseDown[0] = input_->GetMouseButtonDown(MOUSEB_LEFT);
+		io.MouseWheel = (float)input_->GetMouseMoveWheel();
+
+		// Start the frame
+		ImGui::NewFrame();
+
+		if (debugMenu_)
+		{
+			RenderDebugMenuBar();
+		}
+	}
+
+	void IMUIContext::HandleEndRendering(StringHash eventType, VariantMap& eventData)
+	{
+		PROFILE(IMUI_Render);
+
+		ImGui::Render();
+	}
+
+	void IMUIContext::RenderDrawLists(ImDrawData* data)
+	{
+		ImDrawList** const cmd_lists = data->CmdLists;
+		int cmd_lists_count = data->CmdListsCount;
+
+		// Engine does not render when window is closed or device is lost
+		assert(graphics_ && graphics_->IsInitialized() && !graphics_->IsDeviceLost());
+
+		if (cmd_lists_count == 0)
+			return;
+
+		Vector2 invScreenSize(1.0f / (float)graphics_->GetWidth(), 1.0f / (float)graphics_->GetHeight());
+		Vector2 scale(2.0f * invScreenSize.x_, -2.0f * invScreenSize.y_);
+		Vector2 offset(-1.0f, 1.0f);
+
+		Matrix4 projection(Matrix4::IDENTITY);
+		projection.m00_ = scale.x_;
+		projection.m03_ = offset.x_;
+		projection.m11_ = scale.y_;
+		projection.m13_ = offset.y_;
+		projection.m22_ = 1.0f;
+		projection.m23_ = 0.0f;
+		projection.m33_ = 1.0f;
+
+		graphics_->ClearParameterSources();
+		graphics_->SetColorWrite(true);
+		graphics_->SetCullMode(CULL_NONE);
+		graphics_->SetDepthTest(CMP_ALWAYS);
+		graphics_->SetDepthWrite(false);
+		graphics_->SetFillMode(FILL_SOLID);
+		graphics_->SetStencilTest(false);
+		graphics_->ResetRenderTargets();
+	//	graphics_->SetBlendMode(BLEND_ADD);
+		graphics_->SetBlendMode(BLEND_ALPHA);
+
+		ShaderVariation* noTextureVS = graphics_->GetShader(VS, "UIDebug", "VERTEXCOLOR");
+		ShaderVariation* diffTextureVS = graphics_->GetShader(VS, "UIDebug", "DIFFMAP VERTEXCOLOR");
+		ShaderVariation* noTexturePS = graphics_->GetShader(PS, "UIDebug", "VERTEXCOLOR");
+		ShaderVariation* diffTexturePS = graphics_->GetShader(PS, "UIDebug", "DIFFMAP VERTEXCOLOR");
+		ShaderVariation* diffMaskTexturePS = graphics_->GetShader(PS, "UIDebug", "DIFFMAP ALPHAMASK VERTEXCOLOR");
+		ShaderVariation* alphaTexturePS = graphics_->GetShader(PS, "UIDebug", "ALPHAMAP VERTEXCOLOR");
+
+		unsigned alphaFormat = Graphics::GetAlphaFormat();
+
+
+		/// resize buffers 
+
+		if (vertexBuffer_->GetVertexCount() < data->TotalVtxCount || vertexBuffer_->GetVertexCount() > data->TotalVtxCount * 2)
+			vertexBuffer_->SetSize(data->TotalVtxCount, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1, true);
+
+		if (indexBuffer_->GetIndexCount() < data->TotalIdxCount || indexBuffer_->GetIndexCount() > data->TotalIdxCount * 2)
+			indexBuffer_->SetSize(data->TotalIdxCount, false, true);
+
+
+		// Copy and convert all vertices into a single contiguous buffer
+
+// 		int vtx_list_offset = 0;
+// 		int idx_list_offset = 0;
+// 		for (int n = 0; n < data->CmdListsCount; n++)
+// 		{
+// 			const ImDrawList* cmd_list = data->CmdLists[n];
+// 
+// 			vertexBuffer_->SetDataRange(&cmd_list->VtxBuffer[0], vtx_list_offset, cmd_list->VtxBuffer.size());
+// 			indexBuffer_->SetDataRange(&cmd_list->IdxBuffer[0], idx_list_offset, cmd_list->IdxBuffer.size());
+// 
+// 			vtx_list_offset += cmd_list->VtxBuffer.size();
+// 			idx_list_offset += cmd_list->IdxBuffer.size();
+// 		}
+		ImDrawVert* vtx_dst = (ImDrawVert*)vertexBuffer_->Lock(0, data->TotalVtxCount);	
+		ImDrawIdx* idx_dst = (ImDrawIdx*)indexBuffer_->Lock(0, data->TotalIdxCount);
+		for (int n = 0; n < data->CmdListsCount; n++)
+		{
+			const ImDrawList* cmd_list = data->CmdLists[n];
+			memcpy(vtx_dst, &cmd_list->VtxBuffer[0], cmd_list->VtxBuffer.size() * sizeof(ImDrawVert));
+			memcpy(idx_dst, &cmd_list->IdxBuffer[0], cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx));
+			vtx_dst += cmd_list->VtxBuffer.size();
+			idx_dst += cmd_list->IdxBuffer.size();
+		}
+		vertexBuffer_->Unlock();
+		indexBuffer_->Unlock();
+
+		graphics_->SetVertexBuffer(vertexBuffer_);
+		graphics_->SetIndexBuffer(indexBuffer_);
+
+
+		// Render command lists
+		int vtx_offset = 0;
+		int idx_offset = 0;
+		for (int n = 0; n < data->CmdListsCount; n++)
+		{
+			const ImDrawList* cmd_list = data->CmdLists[n];
+			for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.size(); cmd_i++)
+			{
+				const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+				if (pcmd->UserCallback)
+				{
+					pcmd->UserCallback(cmd_list, pcmd);
+				}
+				else
+				{
+					Texture* texture = (Urho3D::Texture*)(intptr_t)pcmd->TextureId;
+					ShaderVariation* ps;
+					ShaderVariation* vs;
+					if (!texture)
+					{
+						ps = noTexturePS;
+						vs = noTextureVS;
+					}
+					else
+					{
+						vs = diffTextureVS;
+						// If texture contains only an alpha channel, use alpha shader (for fonts)
+							if (texture->GetFormat() == alphaFormat)
+							ps = alphaTexturePS;
+	// 					else if (blendMode_ != BLEND_ALPHA && batch.blendMode_ != BLEND_ADDALPHA && batch.blendMode_ != BLEND_PREMULALPHA)
+			//			 						ps = diffMaskTexturePS;
+						else
+							ps = diffTexturePS;
+					}
+
+					graphics_->SetShaders(vs, ps);
+
+					if (graphics_->NeedParameterUpdate(SP_OBJECT, this))
+						graphics_->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
+					if (graphics_->NeedParameterUpdate(SP_CAMERA, this))
+						graphics_->SetShaderParameter(VSP_VIEWPROJ, projection);
+					if (graphics_->NeedParameterUpdate(SP_MATERIAL, this))
+						graphics_->SetShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
+
+ 					graphics_->SetScissorTest(true, IntRect((int)pcmd->ClipRect.x, (int)(pcmd->ClipRect.y),
+ 											(int)(pcmd->ClipRect.z), (int)(pcmd->ClipRect.w)));
+
+					graphics_->SetTexture(0, texture);
+					/// \todo: opengl and directx implementation 
+					/// glDrawElementsBaseVertex 
+					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset, cmd_list->VtxBuffer.size());
+
+				}
+				idx_offset += pcmd->ElemCount;
+			}
+			vtx_offset += cmd_list->VtxBuffer.size();
+		}
+
+	}
 }

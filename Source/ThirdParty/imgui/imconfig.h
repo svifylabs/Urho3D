@@ -6,6 +6,15 @@
 
 #pragma once
 
+#define IMGUI_OVERRIDE_DRAWVERT_STRUCT_LAYOUT \
+struct ImDrawVert\
+{\
+	ImVec2  pos;\
+	float z = 0.0f;\
+	ImU32   col;\
+	ImVec2  uv; \
+};
+
 //---- Define assertion handler. Defaults to calling assert().
 //#define IM_ASSERT(_EXPR)  MyAssert(_EXPR)
 
@@ -42,6 +51,11 @@
         ImVec4(const MyVec4& f) { x = f.x; y = f.y; z = f.z; w = f.w; }     \
         operator MyVec4() const { return MyVec4(x,y,z,w); }
 */
+#define IM_VEC2_CLASS_EXTRA                                                 \
+     explicit   ImVec2(const float* f) { x = f[0]; y = f[1]; }                      
+
+#define IM_VEC4_CLASS_EXTRA                                                 \
+     explicit   ImVec4(const float* f) { x = f[0]; y = f[1]; z = f[2]; w = f[3]; }    
 
 //---- Freely implement extra functions within the ImGui:: namespace.
 //---- Declare helpers or widgets implemented in imgui_user.inl or elsewhere, so end-user doesn't need to include multiple files.

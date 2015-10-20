@@ -54,6 +54,7 @@
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../UI/UI.h"
+#include "../IMUI/IMUI.h"
 #ifdef URHO3D_URHO2D
 #include "../Urho2D/Urho2D.h"
 #endif
@@ -63,6 +64,7 @@
 #endif
 
 #include "../DebugNew.h"
+
 
 #if defined(_MSC_VER) && defined(_DEBUG)
 // From dbgint.h
@@ -406,6 +408,9 @@ bool Engine::Initialize(const VariantMap& parameters)
             SharedPtr<Object> object = i->second_->CreateObject();
     }
 #endif
+
+	/// IMUI 
+	context_->RegisterSubsystem(new IMUIContext(context_));
 
     frameTimer_.Reset();
 

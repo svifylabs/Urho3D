@@ -901,7 +901,7 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     D3DPRIMITIVETYPE d3dPrimitiveType;
 
     GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
-    impl_->device_->DrawIndexedPrimitive(d3dPrimitiveType, 0, minVertex, vertexCount, indexStart, primitiveCount);
+    impl_->device_->DrawIndexedPrimitive(d3dPrimitiveType, minVertex, 0, vertexCount, indexStart, primitiveCount);
 
     numPrimitives_ += primitiveCount;
     ++numBatches_;
