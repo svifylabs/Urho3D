@@ -901,10 +901,27 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     D3DPRIMITIVETYPE d3dPrimitiveType;
 
     GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
-    impl_->device_->DrawIndexedPrimitive(d3dPrimitiveType, minVertex, 0, vertexCount, indexStart, primitiveCount);
+    impl_->device_->DrawIndexedPrimitive(d3dPrimitiveType,0 , minVertex, vertexCount, indexStart, primitiveCount);
 
     numPrimitives_ += primitiveCount;
     ++numBatches_;
+}
+
+void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex, unsigned minVertexIndex, unsigned vertexCount)
+{
+	if (!indexCount)
+		return;
+
+	ResetStreamFrequencies();
+
+	unsigned primitiveCount;
+	D3DPRIMITIVETYPE d3dPrimitiveType;
+
+	GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
+	impl_->device_->DrawIndexedPrimitive(d3dPrimitiveType, baseVertexIndex, minVertexIndex, vertexCount, indexStart, primitiveCount);
+
+	numPrimitives_ += primitiveCount;
+	++numBatches_;
 }
 
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount,

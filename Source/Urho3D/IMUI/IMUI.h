@@ -20,16 +20,19 @@ namespace Urho3D
 	class Texture2D;
 	class IndexBuffer;
 
-
+	/// \todo: Input handler for Touch, Gesture, Joystick
 	class IMUIContext : public Object
 	{
 		OBJECT(IMUIContext,Object);
 	public:
 		IMUIContext(Context* context);
 		virtual	~IMUIContext();
-		///		show debug menu bar
+
+		/// show debug menu bar. \todo: put in other class. 
 		void ShowDebugMenuBar(bool show);
-		///
+		bool IsDebugMenuBarVisible() const { return debugMenu_; }
+	
+		//////////////////////////////////////////////////////////////////////////
 		///  Window
 		///
 		///		return false when window is collapsed, so you can early out in your code. 'bool* p_opened' creates a widget on the upper-right to close the window (which sets your bool to false).
@@ -42,7 +45,7 @@ namespace Urho3D
 		bool BeginChildWindow(ImGuiID id, const Vector2& size = Vector2::ZERO, bool border = false, ImGuiWindowFlags extra_flags = 0);
 		void EndChildWindow();
 
-		///
+		//////////////////////////////////////////////////////////////////////////
 		///  Tooltip
 		///
 		///		set tooltip under mouse-cursor, typically use with ImGui::IsHovered(). last call wins
@@ -51,7 +54,7 @@ namespace Urho3D
 		void BeginTooltip();
 		void EndTooltip();
 
-		///
+		//////////////////////////////////////////////////////////////////////////
 		///  Popup
 		///
 		///		 mark popup as open. popup identifiers are relative to the current ID-stack (so OpenPopup and BeginPopup needs to be at the same level).
@@ -69,7 +72,9 @@ namespace Urho3D
 		void EndPopup();
 		//		close the popup we have begin-ed into. clicking on a MenuItem or Selectable automatically close the current popup.
 		void CloseCurrentPopup();
-		///
+
+
+		//////////////////////////////////////////////////////////////////////////
 		/// Widgets
 		///
 		void Text(const char* fmt, ...);
@@ -102,13 +107,17 @@ namespace Urho3D
 		void PlotHistogram(const char* label, const float* values, int values_count, int values_offset = 0, const char* overlay_text = NULL, float scale_min = FLT_MAX, float scale_max = FLT_MAX, Vector2 graph_size = Vector2::ZERO, size_t stride = sizeof(float));
 		void PlotHistogram(const char* label, float(*values_getter)(void* data, int idx), void* data, int values_count, int values_offset = 0, const char* overlay_text = NULL, float scale_min = FLT_MAX, float scale_max = FLT_MAX, Vector2 graph_size = Vector2::ZERO);
 
+		//////////////////////////////////////////////////////////////////////////
 		/// imgui render
 		void RenderDrawLists(ImDrawData* data);
+
 	protected:
 		/// Initialize when screen mode initially set.
 		void Initialize();
-		///
+		/// Shutdown.
 		void Shutdown();
+
+		//////////////////////////////////////////////////////////////////////////
 		/// render debug menu bar
 		void RenderDebugMenuBar();
 		void ShowEngineInfo(bool* opened = NULL);
@@ -119,10 +128,11 @@ namespace Urho3D
 		void ShowNetworkInfo(bool* opened = NULL);
 		void ShowAudioInfo(bool* opened = NULL);
 		void ShowSystemInfo(bool* opened = NULL);
-
 		void ShowCPUProfilerkInfo(bool* opened = NULL);
 		void ShowGPUProfilerInfo(bool* opened = NULL);
 		void ShowMemoryInfo(bool* opened = NULL);
+
+		//////////////////////////////////////////////////////////////////////////
 		///
 		/// Handle Rendering and Update Loop
 		///
@@ -132,6 +142,12 @@ namespace Urho3D
 		void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
 		/// Handle end rendering event.
 		void HandleEndRendering(StringHash eventType, VariantMap& eventData);
+		/// Handle key event.
+		void HandleKeyUp(StringHash eventType, VariantMap& eventData);
+		/// Handle key event.
+		void HandleKeyDown(StringHash eventType, VariantMap& eventData);
+		/// Handle Text Input event.
+		void HandleTextInput(StringHash eventType, VariantMap& eventData);
 
 		/// Initialized flag.
 		bool initialized_;

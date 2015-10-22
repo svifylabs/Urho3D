@@ -40,6 +40,7 @@
 #include "../Resource/Image.h"
 
 #include "IMUI.h"
+#include "IMUIEvents.h"
 
 #include "../Engine/Engine.h"
 #include "../Graphics/Renderer.h"
@@ -54,11 +55,6 @@
 #include "../Graphics/IndexBuffer.h"
 
 #include "../DebugNew.h"
-
-
-
-
-
 
 
 
@@ -365,6 +361,11 @@ namespace Urho3D
 		SubscribeToEvent(E_BEGINFRAME, HANDLER(IMUIContext, HandleBeginFrame));
 		SubscribeToEvent(E_ENDRENDERING, HANDLER(IMUIContext, HandleEndRendering));
 
+		SubscribeToEvent(E_KEYUP, HANDLER(IMUIContext, HandleKeyUp));
+		SubscribeToEvent(E_KEYDOWN, HANDLER(IMUIContext, HandleKeyDown));
+		SubscribeToEvent(E_TEXTINPUT, HANDLER(IMUIContext, HandleTextInput));
+
+		
 		//////////////////////////////////////////////////////////////////////////
 		/// init imgui
 		ImGuiIO& io = ImGui::GetIO();
@@ -405,7 +406,9 @@ namespace Urho3D
 		fontTexture_->SetAddressMode(COORD_U, ADDRESS_WRAP);
 		fontTexture_->SetAddressMode(COORD_V, ADDRESS_WRAP);
 		fontTexture_->SetAddressMode(COORD_W, ADDRESS_WRAP);
-		LOGINFO("Initialized ImGUI ");
+
+
+		LOGINFO("IMUI::Initialized");
 	}
 
 	void IMUIContext::Shutdown()
@@ -416,7 +419,7 @@ namespace Urho3D
 			delete fontTexture_;
 			fontTexture_ = NULL;
 		}
-		LOGINFO("Shutdown ImGUI ");
+		LOGINFO("IMUI::Shutdown");
 	}
 
 	void IMUIContext::RenderDebugMenuBar()
@@ -645,10 +648,10 @@ namespace Urho3D
 		ImGui::Value("NumViews", renderer->GetNumViews());
 		ImGui::Value("NumPrimitives", renderer->GetNumPrimitives());
 		ImGui::Value("NumBatches", renderer->GetNumBatches());
-		ImGui::Value("NumGeometries", renderer->GetNumGeometries());
-		ImGui::Value("NumLights", renderer->GetNumLights());
-		ImGui::Value("NumShadowMaps", renderer->GetNumShadowMaps());
-		ImGui::Value("NumOccluders", renderer->GetNumOccluders());
+		ImGui::Value("NumGeometries", renderer->GetNumGeometries(true));
+		ImGui::Value("NumLights", renderer->GetNumLights(true));
+		ImGui::Value("NumShadowMaps", renderer->GetNumShadowMaps(true));
+		ImGui::Value("NumOccluders", renderer->GetNumOccluders(true));
 		ImGui::Value("NumViewports", renderer->GetNumViewports());
 		if (ImGui::CollapsingHeader("Other Parameters"))
 		{
@@ -915,7 +918,7 @@ namespace Urho3D
 				profiler->BeginInterval();
 				intervalFrames_ = 0;
 			}
-			ImGui::TextWrapped(profilerOutput.CString());
+			ImGui::Text(profilerOutput.CString());
 		}
 		else
 			ImGui::Text(" Profiler is not enabled ! ");
@@ -976,7 +979,13 @@ namespace Urho3D
 			io.MousePos = ImVec2(-1, -1);
 		}
 
+		io.KeyCtrl = input_->GetQualifierDown(QUAL_CTRL);
+		io.KeyShift = input_->GetQualifierDown(QUAL_SHIFT);
+		io.KeyAlt = input_->GetQualifierDown(QUAL_ALT);
+
 		io.MouseDown[0] = input_->GetMouseButtonDown(MOUSEB_LEFT);
+		io.MouseDown[1] = input_->GetMouseButtonDown(MOUSEB_RIGHT);
+		io.MouseDown[2] = input_->GetMouseButtonDown(MOUSEB_MIDDLE);
 		io.MouseWheel = (float)input_->GetMouseMoveWheel();
 
 		// Start the frame
@@ -984,19 +993,62 @@ namespace Urho3D
 
 		if (debugMenu_)
 		{
+			PROFILE(IMUI_DebugMenuBar);
 			RenderDebugMenuBar();
 		}
 	}
 
 	void IMUIContext::HandleEndRendering(StringHash eventType, VariantMap& eventData)
 	{
-		PROFILE(IMUI_Render);
+		PROFILE(IMUI_Rendering);
+		{
+			PROFILE(IMUI_RenderEvent);
+			using namespace IMUIRender;
+			VariantMap& eventData = GetEventDataMap();
+			eventData[P_IMUI] = this;
+			SendEvent(E_IMUIRENDER, eventData);
+		}
+		{
+			PROFILE(IMUI_Present);
+			ImGui::Render();
+		}	
+	}
 
-		ImGui::Render();
+	void IMUIContext::HandleKeyUp(StringHash eventType, VariantMap& eventData)
+	{
+		using namespace KeyUp;
+
+		ImGuiIO& io = ImGui::GetIO();
+	//	int key = eventData[P_KEY].GetInt();
+		int Scancode = eventData[P_SCANCODE].GetInt();
+	//	int Qualifiers = eventData[P_QUALIFIERS].GetInt();
+		if (Scancode < 512)
+		io.KeysDown[Scancode] = false;
+
+	}
+
+	void IMUIContext::HandleKeyDown(StringHash eventType, VariantMap& eventData)
+	{
+		using namespace KeyDown;
+		ImGuiIO& io = ImGui::GetIO();
+	//	int key = eventData[P_KEY].GetInt();
+		int Scancode = eventData[P_SCANCODE].GetInt();
+	//	int Qualifiers = eventData[P_QUALIFIERS].GetInt();
+		if (Scancode < 512)
+		io.KeysDown[Scancode] = true;
+	}
+
+	void IMUIContext::HandleTextInput(StringHash eventType, VariantMap& eventData)
+	{
+		using namespace TextInput;
+		const String& text = eventData[P_TEXT].GetString();
+		ImGuiIO& io = ImGui::GetIO();
+		io.AddInputCharactersUTF8(text.CString());
 	}
 
 	void IMUIContext::RenderDrawLists(ImDrawData* data)
 	{
+		
 		ImDrawList** const cmd_lists = data->CmdLists;
 		int cmd_lists_count = data->CmdListsCount;
 
@@ -1042,10 +1094,10 @@ namespace Urho3D
 
 		/// resize buffers 
 
-		if (vertexBuffer_->GetVertexCount() < data->TotalVtxCount || vertexBuffer_->GetVertexCount() > data->TotalVtxCount * 2)
+		if ((int)vertexBuffer_->GetVertexCount() < data->TotalVtxCount || (int)vertexBuffer_->GetVertexCount() > data->TotalVtxCount * 2)
 			vertexBuffer_->SetSize(data->TotalVtxCount, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1, true);
 
-		if (indexBuffer_->GetIndexCount() < data->TotalIdxCount || indexBuffer_->GetIndexCount() > data->TotalIdxCount * 2)
+		if ((int)indexBuffer_->GetIndexCount() < data->TotalIdxCount || (int)indexBuffer_->GetIndexCount() > data->TotalIdxCount * 2)
 			indexBuffer_->SetSize(data->TotalIdxCount, false, true);
 
 
@@ -1062,7 +1114,8 @@ namespace Urho3D
 // 
 // 			vtx_list_offset += cmd_list->VtxBuffer.size();
 // 			idx_list_offset += cmd_list->IdxBuffer.size();
-// 		}
+// 		}
+
 		ImDrawVert* vtx_dst = (ImDrawVert*)vertexBuffer_->Lock(0, data->TotalVtxCount);	
 		ImDrawIdx* idx_dst = (ImDrawIdx*)indexBuffer_->Lock(0, data->TotalIdxCount);
 		for (int n = 0; n < data->CmdListsCount; n++)
@@ -1128,10 +1181,18 @@ namespace Urho3D
  											(int)(pcmd->ClipRect.z), (int)(pcmd->ClipRect.w)));
 
 					graphics_->SetTexture(0, texture);
-					/// \todo: opengl and directx implementation 
-					/// glDrawElementsBaseVertex 
+					/// \todo: opengl and directx implementation : imgui needs base vertex index offset , for D3D9 implemented.
+					/// for OpenGL : glDrawElementsBaseVertex ? 
+					/// for D3D11 :  ?? 
+					/// for D3D9 : DrawIndexedPrimitive(d3dPrimitiveType, baseVertexIndex, minVertexIndex, vertexCount, indexStart, primitiveCount);
+					
+#if defined(URHO3D_OPENGL)
 					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset, cmd_list->VtxBuffer.size());
-
+#elif defined(URHO3D_D3D11)
+					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset, cmd_list->VtxBuffer.size());
+#else
+					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset,0 , cmd_list->VtxBuffer.size());
+#endif
 				}
 				idx_offset += pcmd->ElemCount;
 			}

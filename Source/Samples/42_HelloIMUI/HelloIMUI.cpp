@@ -81,48 +81,24 @@ void HelloIMUI::Start()
 void HelloIMUI::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
 	IMUIContext* imui = GetSubsystem<IMUIContext>();
-	imui->ShowDebugMenuBar(true);
-	return;
 
-	imui->Text("Hallo world! ...");
-	imui->Button("test", Vector2(100, 20));
-	imui->TextColored(Vector4(1.0f,0.0f,0.0f,1.0f),"Hallo world! ...");
-	imui->TextColored(Vector4(1.0f, 0.0f, 0.0f, 1.0f), "Hallo world! ...");
-	imui->RadioButton("Double-click ",true);
+	if (!imui->IsDebugMenuBarVisible())
+		imui->ShowDebugMenuBar(true);
+	
+
+
 
 	
 	imui->BeginWindow("Hello");
 
 	imui->Text("Hallo world! ...");
-	imui->Button("test", Vector2(100,20));
+	imui->Button("test", Vector2(100, 20));
+
 	imui->EndWindow();
 
-//	imui->BeginWindow("Hello2");
-// 	imui->BulletText("Double-click on title bar to collapse window.");
-// 	imui->BulletText("Click and drag on lower right corner to resize window.");
-// 	imui->BulletText("Click and drag on any empty space to move window.");
-// 	imui->BulletText("Mouse Wheel to scroll.");
-// 
-// 	imui->BulletText("TAB/SHIFT+TAB to cycle through keyboard editable fields.");
-// 	imui->BulletText("CTRL+Click on a slider or drag box to input text.");
-// 	imui->BulletText(
-// 		"While editing text:\n"
-// 		"- Hold SHIFT or use mouse to select text\n"
-// 		"- CTRL+Left/Right to word jump\n"
-// 		"- CTRL+A or double-click to select all\n"
-// 		"- CTRL+X,CTRL+C,CTRL+V clipboard\n"
-// 		"- CTRL+Z,CTRL+Y undo/redo\n"
-// 		"- ESCAPE to revert\n"
-// 		"- You can apply arithmetic operators +,*,/ on numerical values.\n"
-// 		"  Use +- to subtract.\n");
-// 	imui->Text("Hallo world! ...");
-// 	imui->Text("Hallo world! ...");
-// 	imui->Button("test", Vector2(100, 20));
-// 	imui->EndWindow();
+
 
 	
 
 
-// 	ImGui::ShowTestWindow();
-// 	ImGui::ShowMetricsWindow();
 }

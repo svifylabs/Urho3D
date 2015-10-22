@@ -123,7 +123,9 @@ public:
     /// Draw non-indexed geometry.
     void Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCount);
     /// Draw indexed geometry.
-    void Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount);
+    void Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount,unsigned minVertexIndex, unsigned vertexCount);
+	/// Draw indexed geometry.
+	void Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount,unsigned baseVertexIndex, unsigned minVertexIndex, unsigned vertexCount);
     /// Draw indexed, instanced geometry. An instancing vertex buffer must be set.
     void DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount,
         unsigned instanceCount);
