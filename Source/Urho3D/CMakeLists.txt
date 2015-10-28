@@ -231,6 +231,9 @@ if (URHO3D_LUA)
     list (APPEND INCLUDE_DIRS ${CMAKE_BINARY_DIR}/${DEST_INCLUDE_DIR}/ThirdParty/Lua${JIT})
 endif ()
 
+# TurboBadger library depend on TurboBadger's include dir to be added in the header search path
+list (APPEND INCLUDE_DIRS ${CMAKE_BINARY_DIR}/${DEST_INCLUDE_DIR}/ThirdParty/TurboBadger)
+
 # Setup library output path
 if (ANDROID)
     set (OUTPUT_PATH ${ANDROID_LIBRARY_OUTPUT_PATH})
