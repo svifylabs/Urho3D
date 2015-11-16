@@ -43,7 +43,7 @@
 #include "imgui/imgui.h"
 
 
-DEFINE_APPLICATION_MAIN(HelloIMUI)
+URHO3D_DEFINE_APPLICATION_MAIN(HelloIMUI)
 
 HelloIMUI::HelloIMUI(Context* context) :
     Sample(context)
@@ -73,7 +73,7 @@ void HelloIMUI::Start()
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     XMLFile* style = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
 
-	SubscribeToEvent(E_UPDATE, HANDLER(HelloIMUI, HandleUpdate));
+	SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HelloIMUI, HandleUpdate));
 
 
 }

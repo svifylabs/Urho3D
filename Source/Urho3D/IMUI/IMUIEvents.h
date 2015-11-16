@@ -28,9 +28,9 @@ namespace Urho3D
 {
 
 	/// IMUI Render Event.
-	EVENT(E_IMUIRENDER, IMUIRender)
+	URHO3D_EVENT(E_IMUIRENDER, IMUIRender)
 	{
-		PARAM(P_IMUI, imui);              // IMUI pointer
+		URHO3D_PARAM(P_IMUI, imui);              // IMUI pointer
 	}
 
 }

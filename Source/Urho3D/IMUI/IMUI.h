@@ -20,10 +20,11 @@ namespace Urho3D
 	class Texture2D;
 	class IndexBuffer;
 
-	/// \todo: Input handler for Touch, Gesture, Joystick
+	// TODO: Input handler for Touch, Gesture, Joystick
+	// TODO: Replace font handling with Urho3d font
 	class IMUIContext : public Object
 	{
-		OBJECT(IMUIContext,Object);
+		URHO3D_OBJECT(IMUIContext,Object);
 	public:
 		IMUIContext(Context* context);
 		virtual	~IMUIContext();

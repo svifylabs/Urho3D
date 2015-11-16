@@ -125,6 +125,8 @@ public:
     void Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCount);
     /// Draw indexed geometry.
     void Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount);
+	/// Draw indexed geometry,render primitives with a per-element index offset.
+	void Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex, unsigned minVertexIndex, unsigned vertexCount);
     /// Draw indexed, instanced geometry.
     void DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount,
         unsigned instanceCount);

@@ -791,7 +791,25 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
     numPrimitives_ += primitiveCount;
     ++numBatches_;
 }
+void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex, unsigned minVertexIndex, unsigned vertexCount)
+{
+	assert(GL_ARB_draw_elements_base_vertex);
+	if (!indexCount || !indexBuffer_ || !indexBuffer_->GetGPUObject())
+		return;
 
+	PrepareDraw();
+
+	unsigned indexSize = indexBuffer_->GetIndexSize();
+	unsigned primitiveCount;
+	GLenum glPrimitiveType;
+
+	GetGLPrimitiveType(indexCount, type, primitiveCount, glPrimitiveType);
+	GLenum indexType = indexSize == sizeof(unsigned short) ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
+	glDrawElementsBaseVertex(glPrimitiveType, indexCount, indexType, reinterpret_cast<GLvoid*>(indexStart * indexSize),baseVertexIndex);
+
+	numPrimitives_ += primitiveCount;
+	++numBatches_;
+}
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount,
     unsigned instanceCount)
 {

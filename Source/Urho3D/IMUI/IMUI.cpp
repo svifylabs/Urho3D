@@ -91,7 +91,7 @@ namespace Urho3D
 		fontTexture_(NULL)
 
 	{
-		SubscribeToEvent(E_SCREENMODE, HANDLER(IMUIContext, HandleScreenMode));
+		SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(IMUIContext, HandleScreenMode));
 		// Try to initialize right now, but skip if screen mode is not yet set
 		Initialize();
 		g_imuiContext = this;
@@ -358,12 +358,12 @@ namespace Urho3D
 		vertexBuffer_ = new VertexBuffer(context_);
 		indexBuffer_ = new IndexBuffer(context_);
 		input_ = GetSubsystem<Input>();
-		SubscribeToEvent(E_BEGINFRAME, HANDLER(IMUIContext, HandleBeginFrame));
-		SubscribeToEvent(E_ENDRENDERING, HANDLER(IMUIContext, HandleEndRendering));
+		SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(IMUIContext, HandleBeginFrame));
+		SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(IMUIContext, HandleEndRendering));
 
-		SubscribeToEvent(E_KEYUP, HANDLER(IMUIContext, HandleKeyUp));
-		SubscribeToEvent(E_KEYDOWN, HANDLER(IMUIContext, HandleKeyDown));
-		SubscribeToEvent(E_TEXTINPUT, HANDLER(IMUIContext, HandleTextInput));
+		SubscribeToEvent(E_KEYUP, URHO3D_HANDLER(IMUIContext, HandleKeyUp));
+		SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(IMUIContext, HandleKeyDown));
+		SubscribeToEvent(E_TEXTINPUT, URHO3D_HANDLER(IMUIContext, HandleTextInput));
 
 		
 		//////////////////////////////////////////////////////////////////////////
@@ -408,7 +408,7 @@ namespace Urho3D
 		fontTexture_->SetAddressMode(COORD_W, ADDRESS_WRAP);
 
 
-		LOGINFO("IMUI::Initialized");
+		URHO3D_LOGINFO("IMUI::Initialized");
 	}
 
 	void IMUIContext::Shutdown()
@@ -419,7 +419,7 @@ namespace Urho3D
 			delete fontTexture_;
 			fontTexture_ = NULL;
 		}
-		LOGINFO("IMUI::Shutdown");
+		URHO3D_LOGINFO("IMUI::Shutdown");
 	}
 
 	void IMUIContext::RenderDebugMenuBar()
@@ -819,7 +819,8 @@ namespace Urho3D
 		ResourceCache* cache = GetSubsystem<ResourceCache>();
 		ImGui::Begin("Urho3d ResourceCache Info", opened);
 
-		ImGui::Value("TotalMemoryUse", cache->GetTotalMemoryUse());
+
+		ImGui::Text("TotalMemoryUse: %s", String(cache->GetTotalMemoryUse()).CString());
 		ImGui::Value("AutoReloadResources", cache->GetAutoReloadResources());
 		ImGui::Value("ReturnFailedResources", cache->GetReturnFailedResources());
 		ImGui::Value("SearchPackagesFirst", cache->GetSearchPackagesFirst());
@@ -844,7 +845,7 @@ namespace Urho3D
 			}
 		}
 
-		/// \todo GetAllResources
+		// TODO: GetAllResources
 
 		ImGui::End();
 	}
@@ -895,7 +896,7 @@ namespace Urho3D
 		ImGui::Value("Num Physical CPUs", GetNumPhysicalCPUs());
 		ImGui::Value("Num Logical CPUs", GetNumLogicalCPUs());
 		ImGui::Text("Parsed Arguments : %s", str.CString());
-		/// \todo more cpu info, gpu info, memory info 
+		// TODO: more cpu info, gpu info, memory info 
 		ImGui::End();
 
 
@@ -906,7 +907,7 @@ namespace Urho3D
 		static String profilerOutput("");
 
 		static unsigned intervalFrames_ = 0;
-
+		ImGui::SetNextWindowSize(ImVec2(600, 500), ImGuiSetCond_FirstUseEver);
 		ImGui::Begin("Urho3d CPU Profiler", opened);
 		Profiler* profiler = GetSubsystem<Profiler>();
 		if (profiler)
@@ -914,11 +915,11 @@ namespace Urho3D
 			if (profilerTimer_.GetMSec(false) >= 1000)
 			{
 				profilerTimer_.Reset();
-				profilerOutput = profiler->GetData(false, false);
+				profilerOutput = profiler->PrintData(false, false);
 				profiler->BeginInterval();
 				intervalFrames_ = 0;
 			}
-			ImGui::Text(profilerOutput.CString());
+			ImGui::TextWrapped(profilerOutput.CString());
 		}
 		else
 			ImGui::Text(" Profiler is not enabled ! ");
@@ -928,7 +929,7 @@ namespace Urho3D
 
 	void IMUIContext::ShowGPUProfilerInfo(bool* opened /*= NULL*/)
 	{
-		/// \todo gpu profiler
+		// TODO: gpu profiler
 		ImGui::Begin("Urho3d GPU Profiler", opened);
 		ImGui::Text(" not implemented yet ! :-/ ");
 		ImGui::End();
@@ -936,7 +937,7 @@ namespace Urho3D
 
 	void IMUIContext::ShowMemoryInfo(bool* opened /*= NULL*/)
 	{
-		/// \todo memory profiler
+		// TODO: memory profiler
 		ImGui::Begin("Urho3d Memory Profiler", opened);
 		ImGui::Text(" not implemented yet ! :-/ ");
 		ImGui::End();
@@ -956,7 +957,7 @@ namespace Urho3D
 
 	void IMUIContext::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
 	{
-		PROFILE(IMUI_BeginFrame);
+		URHO3D_PROFILE(IMUI_BeginFrame);
 		using namespace BeginFrame;
 		float timeStep = eventData[P_TIMESTEP].GetFloat();
 
@@ -993,23 +994,23 @@ namespace Urho3D
 
 		if (debugMenu_)
 		{
-			PROFILE(IMUI_DebugMenuBar);
+			URHO3D_PROFILE(IMUI_DebugMenuBar);
 			RenderDebugMenuBar();
 		}
 	}
 
 	void IMUIContext::HandleEndRendering(StringHash eventType, VariantMap& eventData)
 	{
-		PROFILE(IMUI_Rendering);
+		URHO3D_PROFILE(IMUI_Rendering);
 		{
-			PROFILE(IMUI_RenderEvent);
+			URHO3D_PROFILE(IMUI_RenderEvent);
 			using namespace IMUIRender;
 			VariantMap& eventData = GetEventDataMap();
 			eventData[P_IMUI] = this;
 			SendEvent(E_IMUIRENDER, eventData);
 		}
 		{
-			PROFILE(IMUI_Present);
+			URHO3D_PROFILE(IMUI_Present);
 			ImGui::Render();
 		}	
 	}
@@ -1079,27 +1080,33 @@ namespace Urho3D
 		graphics_->SetFillMode(FILL_SOLID);
 		graphics_->SetStencilTest(false);
 		graphics_->ResetRenderTargets();
-	//	graphics_->SetBlendMode(BLEND_ADD);
 		graphics_->SetBlendMode(BLEND_ALPHA);
 
-		ShaderVariation* noTextureVS = graphics_->GetShader(VS, "UIDebug", "VERTEXCOLOR");
-		ShaderVariation* diffTextureVS = graphics_->GetShader(VS, "UIDebug", "DIFFMAP VERTEXCOLOR");
-		ShaderVariation* noTexturePS = graphics_->GetShader(PS, "UIDebug", "VERTEXCOLOR");
-		ShaderVariation* diffTexturePS = graphics_->GetShader(PS, "UIDebug", "DIFFMAP VERTEXCOLOR");
-		ShaderVariation* diffMaskTexturePS = graphics_->GetShader(PS, "UIDebug", "DIFFMAP ALPHAMASK VERTEXCOLOR");
-		ShaderVariation* alphaTexturePS = graphics_->GetShader(PS, "UIDebug", "ALPHAMAP VERTEXCOLOR");
+		ShaderVariation* noTextureVS = graphics_->GetShader(VS, "IMGUI", "VERTEXCOLOR");
+		ShaderVariation* diffTextureVS = graphics_->GetShader(VS, "IMGUI", "DIFFMAP VERTEXCOLOR");
+		ShaderVariation* noTexturePS = graphics_->GetShader(PS, "IMGUI", "VERTEXCOLOR");
+		ShaderVariation* diffTexturePS = graphics_->GetShader(PS, "IMGUI", "DIFFMAP VERTEXCOLOR");
+		ShaderVariation* diffMaskTexturePS = graphics_->GetShader(PS, "IMGUI", "DIFFMAP ALPHAMASK VERTEXCOLOR");
+		ShaderVariation* alphaTexturePS = graphics_->GetShader(PS, "IMGUI", "ALPHAMAP VERTEXCOLOR");
 
 		unsigned alphaFormat = Graphics::GetAlphaFormat();
 
 
 		/// resize buffers 
-
+#if defined(URHO3D_D3D11)
+		// TODO: for D3D11 : cannot set vertex/index buffer to dynamic. bug ? does it need to be dynamic ?
 		if ((int)vertexBuffer_->GetVertexCount() < data->TotalVtxCount || (int)vertexBuffer_->GetVertexCount() > data->TotalVtxCount * 2)
-			vertexBuffer_->SetSize(data->TotalVtxCount, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1, true);
+			vertexBuffer_->SetSize(data->TotalVtxCount+1000, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1, false);
 
 		if ((int)indexBuffer_->GetIndexCount() < data->TotalIdxCount || (int)indexBuffer_->GetIndexCount() > data->TotalIdxCount * 2)
-			indexBuffer_->SetSize(data->TotalIdxCount, false, true);
+			indexBuffer_->SetSize(data->TotalIdxCount+2000, false, false);
+#else
+		if ((int)vertexBuffer_->GetVertexCount() < data->TotalVtxCount || (int)vertexBuffer_->GetVertexCount() > data->TotalVtxCount * 2)
+			vertexBuffer_->SetSize(data->TotalVtxCount + 1000, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1, true);
 
+		if ((int)indexBuffer_->GetIndexCount() < data->TotalIdxCount || (int)indexBuffer_->GetIndexCount() > data->TotalIdxCount * 2)
+			indexBuffer_->SetSize(data->TotalIdxCount + 2000, false, true);
+#endif
 
 		// Copy and convert all vertices into a single contiguous buffer
 
@@ -1160,10 +1167,10 @@ namespace Urho3D
 					{
 						vs = diffTextureVS;
 						// If texture contains only an alpha channel, use alpha shader (for fonts)
-							if (texture->GetFormat() == alphaFormat)
+						if (texture->GetFormat() == alphaFormat)
 							ps = alphaTexturePS;
-	// 					else if (blendMode_ != BLEND_ALPHA && batch.blendMode_ != BLEND_ADDALPHA && batch.blendMode_ != BLEND_PREMULALPHA)
-			//			 						ps = diffMaskTexturePS;
+// 						else if (blendMode_ != BLEND_ALPHA && batch.blendMode_ != BLEND_ADDALPHA && batch.blendMode_ != BLEND_PREMULALPHA)
+//			 						ps = diffMaskTexturePS;
 						else
 							ps = diffTexturePS;
 					}
@@ -1181,15 +1188,15 @@ namespace Urho3D
  											(int)(pcmd->ClipRect.z), (int)(pcmd->ClipRect.w)));
 
 					graphics_->SetTexture(0, texture);
-					/// \todo: opengl and directx implementation : imgui needs base vertex index offset , for D3D9 implemented.
-					/// for OpenGL : glDrawElementsBaseVertex ? 
-					/// for D3D11 :  ?? 
+					// TODO: imgui needs base vertex index offset. implement for opengl 2 !
+					/// for OpenGL : glDrawElementsBaseVertex only opengl 3.2
+					/// for D3D11 :  void DrawIndexed( UINT IndexCount, UINT StartIndexLocation, INT  BaseVertexLocation);
 					/// for D3D9 : DrawIndexedPrimitive(d3dPrimitiveType, baseVertexIndex, minVertexIndex, vertexCount, indexStart, primitiveCount);
 					
 #if defined(URHO3D_OPENGL)
-					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset, cmd_list->VtxBuffer.size());
+					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset,0, cmd_list->VtxBuffer.size());
 #elif defined(URHO3D_D3D11)
-					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset, cmd_list->VtxBuffer.size());
+					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset,0, cmd_list->VtxBuffer.size());
 #else
 					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset,0 , cmd_list->VtxBuffer.size());
 #endif

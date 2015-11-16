@@ -42,7 +42,7 @@ class Window;
 ///     - Accessing available Events data (eventData)
 class HelloIMUI : public Sample
 {
-    OBJECT(HelloIMUI, Sample);
+	URHO3D_OBJECT(HelloIMUI, Sample);
 
 public:
     /// Construct.
