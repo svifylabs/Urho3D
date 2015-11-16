@@ -3762,6 +3762,8 @@ void Update();
 /* readonly */
 String category;
 XMLFile defaultStyle;
+/* readonly */
+Text memoryText;
 uint mode;
 /* readonly */
 Text modeText;
@@ -4492,6 +4494,7 @@ bool enabledEffective;
 uint id;
 /* readonly */
 bool initialized;
+bool maxLayers;
 uint maxObstacles;
 /* readonly */
 Node node;
@@ -7558,6 +7561,7 @@ bool temporary;
 StringHash type;
 /* readonly */
 String typeName;
+bool updateEnabled;
 /* readonly */
 int weakRefs;
 };
@@ -7638,6 +7642,7 @@ bool temporary;
 StringHash type;
 /* readonly */
 String typeName;
+bool updateEnabled;
 uint velocityIterations;
 bool warmStarting;
 /* readonly */
@@ -7779,6 +7784,7 @@ void Clear();
 void Clip(const Rect&);
 void Define(const Vector2&);
 void Define(const Vector2&, const Vector2&);
+bool Defined() const;
 bool Equals(const Rect&) const;
 Intersection IsInside(const Vector2&) const;
 void Merge(const Rect&);
@@ -7789,7 +7795,6 @@ Vector4 ToVector4() const;
 float bottom;
 /* readonly */
 Vector2 center;
-bool defined;
 /* readonly */
 Vector2 halfSize;
 float left;
@@ -7969,6 +7974,7 @@ bool specularLighting;
 int textureAnisotropy;
 TextureFilterMode textureFilterMode;
 int textureQuality;
+bool threadedOcclusion;
 /* readonly */
 StringHash type;
 /* readonly */
@@ -8040,9 +8046,9 @@ bool autoReloadResources;
 /* readonly */
 String category;
 int finishBackgroundResourcesMs;
-Array<uint> memoryBudget;
+Array<uint64> memoryBudget;
 /* readonly */
-Array<uint> memoryUse;
+Array<uint64> memoryUse;
 /* readonly */
 uint numBackgroundLoadResources;
 /* readonly */
@@ -8057,7 +8063,7 @@ bool seachPackagesFirst;
 /* writeonly */
 bool searchPackagesFirst;
 /* readonly */
-uint totalMemoryUse;
+uint64 totalMemoryUse;
 /* readonly */
 StringHash type;
 /* readonly */
@@ -9745,6 +9751,7 @@ void Define(const Frustum&);
 void Define(const Polyhedron&);
 void Define(const Sphere&);
 void Define(const Vector3&, float);
+bool Defined() const;
 float Distance(const Vector3&) const;
 Intersection IsInside(const BoundingBox&) const;
 Intersection IsInside(const Sphere&) const;
@@ -9758,7 +9765,6 @@ void Merge(const Vector3&);
 
 // Properties:
 Vector3 center;
-bool defined;
 float radius;
 };
 
@@ -10364,7 +10370,7 @@ String Replaced(const String&, const String&, bool = true) const;
 String Replaced(uint8, uint8, bool = true) const;
 void Resize(uint);
 void SetUTF8FromLatin1(const String&);
-Array<String> Split(uint8) const;
+Array<String> Split(uint8, bool = false) const;
 bool StartsWith(const String&, bool = true) const;
 String Substring(uint) const;
 String Substring(uint, uint) const;
@@ -13439,6 +13445,7 @@ Object GetEventSender();
 String GetExtension(const String&, bool = true);
 String GetFileName(const String&);
 String GetFileNameAndExtension(const String&, bool = false);
+String GetFileSizeString(uint64);
 uint GetFloat16Format();
 uint GetFloat32Format();
 uint GetFormat(const String&);
@@ -13517,7 +13524,7 @@ void UnsubscribeFromAllEventsExcept(Array<String>);
 void UnsubscribeFromEvent(Object, const String&);
 void UnsubscribeFromEvent(const String&);
 void UnsubscribeFromEvents(Object);
-bool WriteDrawablesToOBJ(Array<Drawable>, File, bool = false);
+bool WriteDrawablesToOBJ(Array<Drawable>, File, bool, bool, bool = false);
 
 // Global properties
 DBAPI DBAPI;
@@ -13591,6 +13598,8 @@ uint DD_SOURCE;
 uint DD_SOURCE_AND_TARGET;
 uint DD_TARGET;
 uint DEBUGHUD_SHOW_ALL;
+uint DEBUGHUD_SHOW_ALL_MEMORY;
+uint DEBUGHUD_SHOW_MEMORY;
 uint DEBUGHUD_SHOW_MODE;
 uint DEBUGHUD_SHOW_NONE;
 uint DEBUGHUD_SHOW_PROFILER;

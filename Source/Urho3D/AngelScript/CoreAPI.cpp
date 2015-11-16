@@ -675,9 +675,9 @@ static void RegisterSpline(asIScriptEngine* engine)
     engine->RegisterObjectMethod("Spline", "Variant GetPoint(float)", asMETHOD(Spline, GetPoint), asCALL_THISCALL);
 }
 
-static CScriptArray* StringSplit(char separator, const String* str)
+static CScriptArray* StringSplit(char separator, bool keepEmptyStrings, const String* str)
 {
-    Vector<String> result = str->Split(separator);
+    Vector<String> result = str->Split(separator, keepEmptyStrings);
     return VectorToArray<String>(result, "Array<String>");
 }
 
@@ -695,7 +695,7 @@ static String StringJoined(CScriptArray* arr, const String& glue)
 
 static void RegisterStringUtils(asIScriptEngine* engine)
 {
-    engine->RegisterObjectMethod("String", "Array<String>@ Split(uint8) const", asFUNCTION(StringSplit), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("String", "Array<String>@ Split(uint8, bool keepEmptyStrings = false) const", asFUNCTION(StringSplit), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("String", "void Join(String[]&, const String&in)", asFUNCTION(StringJoin), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("String", "bool ToBool() const", asFUNCTIONPR(ToBool, (const String&), bool), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("String", "float ToFloat() const", asFUNCTIONPR(ToFloat, (const String&), float), asCALL_CDECL_OBJLAST);
@@ -719,6 +719,7 @@ static void RegisterStringUtils(asIScriptEngine* engine)
     engine->RegisterGlobalFunction("bool IsAlpha(uint)", asFUNCTION(IsAlpha), asCALL_CDECL);
     engine->RegisterGlobalFunction("uint ToUpper(uint)", asFUNCTION(ToUpper), asCALL_CDECL);
     engine->RegisterGlobalFunction("uint ToLower(uint)", asFUNCTION(ToLower), asCALL_CDECL);
+    engine->RegisterGlobalFunction("String GetFileSizeString(uint64)", asFUNCTION(GetFileSizeString), asCALL_CDECL);
 }
 
 static void ConstructTimer(Timer* ptr)
