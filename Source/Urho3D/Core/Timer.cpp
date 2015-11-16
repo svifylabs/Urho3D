@@ -27,7 +27,7 @@
 
 #include <ctime>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <mmsystem.h>
 #elif __EMSCRIPTEN__
@@ -51,7 +51,7 @@ Time::Time(Context* context) :
     timeStep_(0.0f),
     timerPeriod_(0)
 {
-#ifdef WIN32
+#ifdef _WIN32
     LARGE_INTEGER frequency;
     if (QueryPerformanceFrequency(&frequency))
     {
@@ -71,7 +71,7 @@ Time::~Time()
 
 static unsigned Tick()
 {
-#ifdef WIN32
+#ifdef _WIN32
     return (unsigned)timeGetTime();
 #elif __EMSCRIPTEN__
     return (unsigned)emscripten_get_now();
@@ -84,7 +84,7 @@ static unsigned Tick()
 
 static long long HiresTick()
 {
-#ifdef WIN32
+#ifdef _WIN32
     if (HiresTimer::IsSupported())
     {
         LARGE_INTEGER counter;
@@ -115,7 +115,7 @@ void Time::BeginFrame(float timeStep)
         profiler->BeginFrame();
 
     {
-        PROFILE(BeginFrame);
+        URHO3D_PROFILE(BeginFrame);
 
         // Frame begin event
         using namespace BeginFrame;
@@ -130,7 +130,7 @@ void Time::BeginFrame(float timeStep)
 void Time::EndFrame()
 {
     {
-        PROFILE(EndFrame);
+        URHO3D_PROFILE(EndFrame);
 
         // Frame end event
         SendEvent(E_ENDFRAME);
@@ -143,7 +143,7 @@ void Time::EndFrame()
 
 void Time::SetTimerPeriod(unsigned mSec)
 {
-#ifdef WIN32
+#ifdef _WIN32
     if (timerPeriod_ > 0)
         timeEndPeriod(timerPeriod_);
 
@@ -179,7 +179,7 @@ String Time::GetTimeStamp()
 
 void Time::Sleep(unsigned mSec)
 {
-#ifdef WIN32
+#ifdef _WIN32
     ::Sleep(mSec);
 #else
     usleep(mSec * 1000);

@@ -1300,6 +1300,7 @@ namespace Urho3D
 - %Draw %OffMeshConnections : bool
 - %Draw %NavAreas : bool
 - %Max %Obstacles : int
+- %Max %Layers : int
 - %Draw %Obstacles : bool
 
 ### Light
@@ -5701,6 +5702,7 @@ Properties:
 
 - String category // readonly
 - XMLFile@ defaultStyle
+- Text@ memoryText // readonly
 - uint mode
 - Text@ modeText // readonly
 - float profilerInterval
@@ -6340,6 +6342,7 @@ Properties:
 - bool enabledEffective // readonly
 - uint id // readonly
 - bool initialized // readonly
+- bool maxLayers
 - uint maxObstacles
 - Node@ node // readonly
 - uint numAttributes // readonly
@@ -8249,6 +8252,7 @@ Methods:
 - Component@[]@ GetComponents(const String&, bool = false) const
 - bool GetInterceptNetworkUpdate(const String&) const
 - Component@ GetOrCreateComponent(const String&, CreateMode = REPLICATED, uint = 0)
+- Component@ GetParentComponent(const String&, bool = false) const
 - ScriptObject@ GetScriptObject() const
 - ScriptObject@ GetScriptObject(const String&) const
 - bool HasComponent(const String&) const
@@ -8995,6 +8999,7 @@ Properties:
 - bool temporary
 - StringHash type // readonly
 - String typeName // readonly
+- bool updateEnabled
 - int weakRefs // readonly
 
 <a name="Class_PhysicsWorld2D"></a>
@@ -9067,6 +9072,7 @@ Properties:
 - bool temporary
 - StringHash type // readonly
 - String typeName // readonly
+- bool updateEnabled
 - uint velocityIterations
 - bool warmStarting
 - int weakRefs // readonly
@@ -9214,6 +9220,7 @@ Methods:
 - void Clip(const Rect&)
 - void Define(const Vector2&)
 - void Define(const Vector2&, const Vector2&)
+- bool Defined() const
 - bool Equals(const Rect&) const
 - Intersection IsInside(const Vector2&) const
 - void Merge(const Rect&)
@@ -9224,7 +9231,6 @@ Properties:
 
 - float bottom
 - Vector2 center // readonly
-- bool defined
 - Vector2 halfSize // readonly
 - float left
 - Vector2 max
@@ -9393,6 +9399,7 @@ Properties:
 - int textureAnisotropy
 - TextureFilterMode textureFilterMode
 - int textureQuality
+- bool threadedOcclusion
 - StringHash type // readonly
 - String typeName // readonly
 - Viewport@[] viewports
@@ -9459,8 +9466,8 @@ Properties:
 - bool autoReloadResources
 - String category // readonly
 - int finishBackgroundResourcesMs
-- uint[] memoryBudget
-- uint[] memoryUse // readonly
+- uint64[] memoryBudget
+- uint64[] memoryUse // readonly
 - uint numBackgroundLoadResources // readonly
 - PackageFile@[]@ packageFiles // readonly
 - int refs // readonly
@@ -9468,7 +9475,7 @@ Properties:
 - bool returnFailedResources
 - bool seachPackagesFirst // readonly
 - bool searchPackagesFirst // writeonly
-- uint totalMemoryUse // readonly
+- uint64 totalMemoryUse // readonly
 - StringHash type // readonly
 - String typeName // readonly
 - int weakRefs // readonly
@@ -9702,6 +9709,7 @@ Methods:
 - bool GetInterceptNetworkUpdate(const String&) const
 - Node@ GetNode(uint) const
 - Component@ GetOrCreateComponent(const String&, CreateMode = REPLICATED, uint = 0)
+- Component@ GetParentComponent(const String&, bool = false) const
 - ScriptObject@ GetScriptObject() const
 - ScriptObject@ GetScriptObject(const String&) const
 - bool HasComponent(const String&) const
@@ -10941,6 +10949,7 @@ Methods:
 - void Define(const Polyhedron&)
 - void Define(const Sphere&)
 - void Define(const Vector3&, float)
+- bool Defined() const
 - float Distance(const Vector3&) const
 - Intersection IsInside(const BoundingBox&) const
 - Intersection IsInside(const Sphere&) const
@@ -10955,7 +10964,6 @@ Methods:
 Properties:
 
 - Vector3 center
-- bool defined
 - float radius
 
 <a name="Class_Spline"></a>
@@ -11491,7 +11499,7 @@ Methods:
 - String Replaced(uint8, uint8, bool = true) const
 - void Resize(uint)
 - void SetUTF8FromLatin1(const String&)
-- String[]@ Split(uint8) const
+- String[]@ Split(uint8, bool = false) const
 - bool StartsWith(const String&, bool = true) const
 - String Substring(uint) const
 - String Substring(uint, uint) const
@@ -14235,6 +14243,7 @@ Properties:
 - String GetExtension(const String&, bool = true)
 - String GetFileName(const String&)
 - String GetFileNameAndExtension(const String&, bool = false)
+- String GetFileSizeString(uint64)
 - uint GetFloat16Format()
 - uint GetFloat32Format()
 - uint GetFormat(const String&)
@@ -14313,7 +14322,7 @@ Properties:
 - void UnsubscribeFromEvent(Object@, const String&)
 - void UnsubscribeFromEvent(const String&)
 - void UnsubscribeFromEvents(Object@)
-- bool WriteDrawablesToOBJ(Drawable@[]@, File@, bool = false)
+- bool WriteDrawablesToOBJ(Drawable@[]@, File@, bool, bool, bool = false)
 \section ScriptAPI_GlobalProperties Global properties
 - DBAPI DBAPI
 - Audio@ audio
@@ -14385,6 +14394,8 @@ Properties:
 - uint DD_SOURCE_AND_TARGET
 - uint DD_TARGET
 - uint DEBUGHUD_SHOW_ALL
+- uint DEBUGHUD_SHOW_ALL_MEMORY
+- uint DEBUGHUD_SHOW_MEMORY
 - uint DEBUGHUD_SHOW_MODE
 - uint DEBUGHUD_SHOW_NONE
 - uint DEBUGHUD_SHOW_PROFILER
