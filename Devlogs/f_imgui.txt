@@ -6,7 +6,9 @@ GOAL:	Implement imgui in Urho3d by using a warpper class, IMUI, that calls to im
 // TODO: OpenGL 2 / OpenGL ES does not support glDrawElementsBaseVertex ... (extensions ? )
 // TODO: Input handler for Touch, Gesture, Joystick
 // TODO: Replace font handling with Urho3d font
+// TODO: test android build
 
+- Added a fix/hack for Opengl es in IMUIContext::RenderDrawLists
 - Added OpenGLGraphics::Draw (for OGL3.2) to use unsigned baseVertexIndex for rendering primitives with a per-element index offset.
 - Added D3D9Graphics::Draw to use unsigned baseVertexIndex for rendering primitives with a per-element index offset.
 - Added D3D11Graphics::Draw to use unsigned baseVertexIndex for rendering primitives with a per-element index offset.

@@ -1049,7 +1049,6 @@ namespace Urho3D
 
 	void IMUIContext::RenderDrawLists(ImDrawData* data)
 	{
-		
 		ImDrawList** const cmd_lists = data->CmdLists;
 		int cmd_lists_count = data->CmdListsCount;
 
@@ -1123,6 +1122,7 @@ namespace Urho3D
 // 			idx_list_offset += cmd_list->IdxBuffer.size();
 // 		}
 
+#ifndef GL_ES_VERSION_2_0
 		ImDrawVert* vtx_dst = (ImDrawVert*)vertexBuffer_->Lock(0, data->TotalVtxCount);	
 		ImDrawIdx* idx_dst = (ImDrawIdx*)indexBuffer_->Lock(0, data->TotalIdxCount);
 		for (int n = 0; n < data->CmdListsCount; n++)
@@ -1135,6 +1135,7 @@ namespace Urho3D
 		}
 		vertexBuffer_->Unlock();
 		indexBuffer_->Unlock();
+#endif
 
 		graphics_->SetVertexBuffer(vertexBuffer_);
 		graphics_->SetIndexBuffer(indexBuffer_);
@@ -1146,6 +1147,15 @@ namespace Urho3D
 		for (int n = 0; n < data->CmdListsCount; n++)
 		{
 			const ImDrawList* cmd_list = data->CmdLists[n];
+ #ifdef GL_ES_VERSION_2_0
+			
+			vertexBuffer_->SetDataRange(&cmd_list->VtxBuffer[0], 0, cmd_list->VtxBuffer.size());
+			indexBuffer_->SetDataRange(&cmd_list->IdxBuffer[0], 0, cmd_list->IdxBuffer.size());
+
+			idx_offset = 0;
+#endif
+
+
 			for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.size(); cmd_i++)
 			{
 				const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
@@ -1192,9 +1202,17 @@ namespace Urho3D
 					/// for OpenGL : glDrawElementsBaseVertex only opengl 3.2
 					/// for D3D11 :  void DrawIndexed( UINT IndexCount, UINT StartIndexLocation, INT  BaseVertexLocation);
 					/// for D3D9 : DrawIndexedPrimitive(d3dPrimitiveType, baseVertexIndex, minVertexIndex, vertexCount, indexStart, primitiveCount);
-					
+			
+
 #if defined(URHO3D_OPENGL)
-					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset,0, cmd_list->VtxBuffer.size());
+
+#ifdef GL_ES_VERSION_2_0
+
+					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, 0, cmd_list->VtxBuffer.size());
+#else
+					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset, 0, cmd_list->VtxBuffer.size());
+#endif
+				
 #elif defined(URHO3D_D3D11)
 					graphics_->Draw(TRIANGLE_LIST, idx_offset, pcmd->ElemCount, vtx_offset,0, cmd_list->VtxBuffer.size());
 #else
@@ -1205,6 +1223,7 @@ namespace Urho3D
 			}
 			vtx_offset += cmd_list->VtxBuffer.size();
 		}
-
+		
 	}
+
 }
