@@ -98,3 +98,5 @@ add_sample_subdirectory (40_Localization)
 if (URHO3D_DATABASE_ODBC OR URHO3D_DATABASE_SQLITE)
     add_sample_subdirectory (41_DatabaseDemo)
 endif ()
+
+add_sample_subdirectory (42_RuntimeCompiledCpp)
