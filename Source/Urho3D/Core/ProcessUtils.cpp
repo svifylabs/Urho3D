@@ -38,7 +38,7 @@
 #include <LibCpuId/libcpuid.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <io.h>
 #else
@@ -74,14 +74,16 @@ inline void SetFPUState(unsigned control)
 
 #endif
 
+#ifndef MINI_URHO
 #include <SDL/SDL.h>
+#endif
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 
-#ifdef WIN32
+#ifdef _WIN32
 static bool consoleOpened = false;
 #endif
 static String currentLine;
@@ -125,7 +127,9 @@ void InitFPU()
 
 void ErrorDialog(const String& title, const String& message)
 {
+#ifndef MINI_URHO
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title.CString(), message.CString(), 0);
+#endif
 }
 
 void ErrorExit(const String& message, int exitCode)
@@ -138,7 +142,7 @@ void ErrorExit(const String& message, int exitCode)
 
 void OpenConsoleWindow()
 {
-#ifdef WIN32
+#ifdef _WIN32
     if (consoleOpened)
         return;
 
@@ -154,7 +158,7 @@ void OpenConsoleWindow()
 void PrintUnicode(const String& str, bool error)
 {
 #if !defined(ANDROID) && !defined(IOS)
-#ifdef WIN32
+#ifdef _WIN32
     // If the output stream has been redirected, use fprintf instead of WriteConsoleW,
     // though it means that proper Unicode output will not work
     FILE* out = error ? stderr : stdout;
@@ -272,7 +276,7 @@ String GetConsoleInput()
     return ret;
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
     HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
     HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
     if (input == INVALID_HANDLE_VALUE || output == INVALID_HANDLE_VALUE)
@@ -343,7 +347,7 @@ String GetPlatform()
     return "Android";
 #elif defined(IOS)
     return "iOS";
-#elif defined(WIN32)
+#elif defined(_WIN32)
     return "Windows";
 #elif defined(__APPLE__)
     return "Mac OS X";

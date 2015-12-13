@@ -32,11 +32,15 @@
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
 
+#ifndef MINI_URHO
 #include <SDL/SDL_filesystem.h>
+#else
+#include <stdio.h>
+#endif
 
 #include <sys/stat.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <cstdio>
 #ifndef _MSC_VER
 #define _WIN32_IE 0x501
@@ -79,12 +83,12 @@ namespace Urho3D
 
 int DoSystemCommand(const String& commandLine, bool redirectToLog, Context* context)
 {
-#if !defined(NO_POPEN)
+#if !defined(NO_POPEN) && !defined(MINI_URHO)
     if (!redirectToLog)
 #endif
         return system(commandLine.CString());
 
-#if !defined(NO_POPEN)
+#if !defined(NO_POPEN) && !defined(MINI_URHO)
     // Get a platform-agnostic temporary file name for stderr redirection
     String stderrFilename;
     String adjustedCommandLine(commandLine);
@@ -135,7 +139,7 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments)
 {
     String fixedFileName = GetNativePath(fileName);
 
-#ifdef WIN32
+#ifdef _WIN32
     // Add .exe extension if no extension defined
     if (GetExtension(fixedFileName).Empty())
         fixedFileName += ".exe";
@@ -299,7 +303,7 @@ bool FileSystem::SetCurrentDir(const String& pathName)
         URHO3D_LOGERROR("Access denied to " + pathName);
         return false;
     }
-#ifdef WIN32
+#ifdef _WIN32
     if (SetCurrentDirectoryW(GetWideNativePath(pathName).CString()) == FALSE)
     {
         URHO3D_LOGERROR("Failed to change directory to " + pathName);
@@ -332,7 +336,7 @@ bool FileSystem::CreateDir(const String& pathName)
             return false;
     }
 
-#ifdef WIN32
+#ifdef _WIN32
     bool success = (CreateDirectoryW(GetWideNativePath(RemoveTrailingSlash(pathName)).CString(), 0) == TRUE) ||
         (GetLastError() == ERROR_ALREADY_EXISTS);
 #else
@@ -433,7 +437,7 @@ bool FileSystem::SystemOpen(const String& fileName, const String& mode)
             return false;
         }
 
-#ifdef WIN32
+#ifdef _WIN32
         bool success = (size_t)ShellExecuteW(0, !mode.Empty() ? WString(mode).CString() : 0,
             GetWideNativePath(fileName).CString(), 0, 0, SW_SHOW) > 32;
 #else
@@ -499,7 +503,7 @@ bool FileSystem::Rename(const String& srcFileName, const String& destFileName)
         return false;
     }
 
-#ifdef WIN32
+#ifdef _WIN32
     return MoveFileW(GetWideNativePath(srcFileName).CString(), GetWideNativePath(destFileName).CString()) != 0;
 #else
     return rename(GetNativePath(srcFileName).CString(), GetNativePath(destFileName).CString()) == 0;
@@ -514,7 +518,7 @@ bool FileSystem::Delete(const String& fileName)
         return false;
     }
 
-#ifdef WIN32
+#ifdef _WIN32
     return DeleteFileW(GetWideNativePath(fileName).CString()) != 0;
 #else
     return remove(GetNativePath(fileName).CString()) == 0;
@@ -523,7 +527,7 @@ bool FileSystem::Delete(const String& fileName)
 
 String FileSystem::GetCurrentDir() const
 {
-#ifdef WIN32
+#ifdef _WIN32
     wchar_t path[MAX_PATH];
     path[0] = 0;
     GetCurrentDirectoryW(MAX_PATH, path);
@@ -564,7 +568,7 @@ unsigned FileSystem::GetLastModifiedTime(const String& fileName) const
     if (fileName.Empty() || !CheckAccess(fileName))
         return 0;
 
-#ifdef WIN32
+#ifdef _WIN32
     struct _stat st;
     if (!_stat(fileName.CString(), &st))
         return (unsigned)st.st_mtime;
@@ -600,7 +604,7 @@ bool FileSystem::FileExists(const String& fileName) const
 
     String fixedName = GetNativePath(RemoveTrailingSlash(fileName));
 
-#ifdef WIN32
+#ifdef _WIN32
     DWORD attributes = GetFileAttributesW(WString(fixedName).CString());
     if (attributes == INVALID_FILE_ATTRIBUTES || attributes & FILE_ATTRIBUTE_DIRECTORY)
         return false;
@@ -618,7 +622,7 @@ bool FileSystem::DirExists(const String& pathName) const
     if (!CheckAccess(pathName))
         return false;
 
-#ifndef WIN32
+#ifndef _WIN32
     // Always return true for the root directory
     if (pathName == "/")
         return true;
@@ -654,7 +658,7 @@ bool FileSystem::DirExists(const String& pathName) const
     }
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
     DWORD attributes = GetFileAttributesW(WString(fixedName).CString());
     if (attributes == INVALID_FILE_ATTRIBUTES || !(attributes & FILE_ATTRIBUTE_DIRECTORY))
         return false;
@@ -692,7 +696,7 @@ String FileSystem::GetProgramDir() const
 #elif defined(IOS)
     programDir_ = AddTrailingSlash(SDL_IOS_GetResourceDir());
     return programDir_;
-#elif defined(WIN32)
+#elif defined(_WIN32)
     wchar_t exeName[MAX_PATH];
     exeName[0] = 0;
     GetModuleFileNameW(0, exeName, MAX_PATH);
@@ -732,7 +736,7 @@ String FileSystem::GetUserDocumentsDir() const
     return AddTrailingSlash(SDL_Android_GetFilesDir());
 #elif defined(IOS)
     return AddTrailingSlash(SDL_IOS_GetDocumentsDir());
-#elif defined(WIN32)
+#elif defined(_WIN32)
     wchar_t pathName[MAX_PATH];
     pathName[0] = 0;
     SHGetSpecialFolderPathW(0, pathName, CSIDL_PERSONAL, 0);
@@ -748,6 +752,7 @@ String FileSystem::GetUserDocumentsDir() const
 String FileSystem::GetAppPreferencesDir(const String& org, const String& app) const
 {
     String dir;
+#ifndef MINI_URHO
     char* prefPath = SDL_GetPrefPath(org.CString(), app.CString());
     if (prefPath)
     {
@@ -755,6 +760,7 @@ String FileSystem::GetAppPreferencesDir(const String& org, const String& app) co
         SDL_free(prefPath);
     }
     else
+#endif
         URHO3D_LOGWARNING("Could not get application preferences directory");
 
     return dir;
@@ -773,7 +779,7 @@ bool FileSystem::SetLastModifiedTime(const String& fileName, unsigned newTime)
     if (fileName.Empty() || !CheckAccess(fileName))
         return false;
 
-#ifdef WIN32
+#ifdef _WIN32
     struct _stat oldTime;
     struct _utimbuf newTimes;
     if (_stat(fileName.CString(), &oldTime) != 0)
@@ -839,7 +845,7 @@ void FileSystem::ScanDirInternal(Vector<String>& result, String path, const Stri
         return;
     }
 #endif
-#ifdef WIN32
+#ifdef _WIN32
     WIN32_FIND_DATAW info;
     HANDLE handle = FindFirstFileW(WString(path + "*").CString(), &info);
     if (handle != INVALID_HANDLE_VALUE)
@@ -1034,7 +1040,7 @@ String GetInternalPath(const String& pathName)
 
 String GetNativePath(const String& pathName)
 {
-#ifdef WIN32
+#ifdef _WIN32
     return pathName.Replaced('/', '\\');
 #else
     return pathName;
@@ -1043,7 +1049,7 @@ String GetNativePath(const String& pathName)
 
 WString GetWideNativePath(const String& pathName)
 {
-#ifdef WIN32
+#ifdef _WIN32
     return WString(pathName.Replaced('/', '\\'));
 #else
     return WString(pathName);
@@ -1060,7 +1066,7 @@ bool IsAbsolutePath(const String& pathName)
     if (path[0] == '/')
         return true;
 
-#ifdef WIN32
+#ifdef _WIN32
     if (path.Length() > 1 && IsAlpha(path[0]) && path[1] == ':')
         return true;
 #endif
