@@ -81,24 +81,10 @@ void HelloIMUI::Start()
 void HelloIMUI::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
 	IMUIContext* imui = GetSubsystem<IMUIContext>();
-
-	if (!imui->IsDebugMenuBarVisible())
-		imui->ShowDebugMenuBar(true);
 	
-
-
-
-	
-	imui->BeginWindow("Hello");
-
-	imui->Text("Hallo world! ...");
-	imui->Button("test", Vector2(100, 20));
-
-	imui->EndWindow();
-
-
-
-	
-
+	ImGui::Begin("Hello");
+	ImGui::Text("Hallo world! ...");
+	ImGui::Button("test", ImVec2(100.0f, 20.0f));
+	ImGui::End();
 
 }
