@@ -642,6 +642,10 @@ namespace Urho3D
 				SetMode(width, height);
 		}
 
+		// Re-enable depth test and depth func in case a third party program has modified it
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(glCmpFunc[depthTestMode_]);
+
 		// Set default rendertarget and depth buffer
 		ResetRenderTargets();
 
@@ -1073,6 +1077,7 @@ namespace Urho3D
 
 		// Update the clip plane uniform on GL3, and set constant buffers
 #ifndef GL_ES_VERSION_2_0
+<<<<<<< HEAD
 		if (gl3Support && shaderProgram_)
 		{
 			const SharedPtr<ConstantBuffer>* constantBuffers = shaderProgram_->GetConstantBuffers();
@@ -1717,6 +1722,660 @@ namespace Urho3D
 	{
 		if (constantBias != constantDepthBias_ || slopeScaledBias != slopeScaledDepthBias_)
 		{
+=======
+    if (gl3Support && shaderProgram_)
+    {
+        const SharedPtr<ConstantBuffer>* constantBuffers = shaderProgram_->GetConstantBuffers();
+        for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS * 2; ++i)
+        {
+            ConstantBuffer* buffer = constantBuffers[i].Get();
+            if (buffer != currentConstantBuffers_[i])
+            {
+                unsigned object = buffer ? buffer->GetGPUObject() : 0;
+                glBindBufferBase(GL_UNIFORM_BUFFER, i, object);
+                // Calling glBindBufferBase also affects the generic buffer binding point
+                impl_->boundUBO_ = object;
+                currentConstantBuffers_[i] = buffer;
+                ShaderProgram::ClearGlobalParameterSource((ShaderParameterGroup)(i % MAX_SHADER_PARAMETER_GROUPS));
+            }
+        }
+
+        SetShaderParameter(VSP_CLIPPLANE, useClipPlane_ ? clipPlane_ : Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+    }
+#endif
+
+    // Store shader combination if shader dumping in progress
+    if (shaderPrecache_)
+        shaderPrecache_->StoreShaders(vertexShader_, pixelShader_);
+}
+
+void Graphics::SetShaderParameter(StringHash param, const float* data, unsigned count)
+{
+    if (shaderProgram_)
+    {
+        const ShaderParameter* info = shaderProgram_->GetParameter(param);
+        if (info)
+        {
+            if (info->bufferPtr_)
+            {
+                ConstantBuffer* buffer = info->bufferPtr_;
+                if (!buffer->IsDirty())
+                    dirtyConstantBuffers_.Push(buffer);
+                buffer->SetParameter((unsigned)info->location_, (unsigned)(count * sizeof(float)), data);
+                return;
+            }
+
+            switch (info->type_)
+            {
+            case GL_FLOAT:
+                glUniform1fv(info->location_, count, data);
+                break;
+
+            case GL_FLOAT_VEC2:
+                glUniform2fv(info->location_, count / 2, data);
+                break;
+
+            case GL_FLOAT_VEC3:
+                glUniform3fv(info->location_, count / 3, data);
+                break;
+
+            case GL_FLOAT_VEC4:
+                glUniform4fv(info->location_, count / 4, data);
+                break;
+
+            case GL_FLOAT_MAT3:
+                glUniformMatrix3fv(info->location_, count / 9, GL_FALSE, data);
+                break;
+
+            case GL_FLOAT_MAT4:
+                glUniformMatrix4fv(info->location_, count / 16, GL_FALSE, data);
+                break;
+
+            default: break;
+            }
+        }
+    }
+}
+
+void Graphics::SetShaderParameter(StringHash param, float value)
+{
+    if (shaderProgram_)
+    {
+        const ShaderParameter* info = shaderProgram_->GetParameter(param);
+        if (info)
+        {
+            if (info->bufferPtr_)
+            {
+                ConstantBuffer* buffer = info->bufferPtr_;
+                if (!buffer->IsDirty())
+                    dirtyConstantBuffers_.Push(buffer);
+                buffer->SetParameter((unsigned)info->location_, sizeof(float), &value);
+                return;
+            }
+
+            glUniform1fv(info->location_, 1, &value);
+        }
+    }
+}
+
+void Graphics::SetShaderParameter(StringHash param, const Color& color)
+{
+    SetShaderParameter(param, color.Data(), 4);
+}
+
+void Graphics::SetShaderParameter(StringHash param, const Vector2& vector)
+{
+    if (shaderProgram_)
+    {
+        const ShaderParameter* info = shaderProgram_->GetParameter(param);
+        if (info)
+        {
+            if (info->bufferPtr_)
+            {
+                ConstantBuffer* buffer = info->bufferPtr_;
+                if (!buffer->IsDirty())
+                    dirtyConstantBuffers_.Push(buffer);
+                buffer->SetParameter((unsigned)info->location_, sizeof(Vector2), &vector);
+                return;
+            }
+
+            // Check the uniform type to avoid mismatch
+            switch (info->type_)
+            {
+            case GL_FLOAT:
+                glUniform1fv(info->location_, 1, vector.Data());
+                break;
+
+            case GL_FLOAT_VEC2:
+                glUniform2fv(info->location_, 1, vector.Data());
+                break;
+
+            default: break;
+            }
+        }
+    }
+}
+
+void Graphics::SetShaderParameter(StringHash param, const Matrix3& matrix)
+{
+    if (shaderProgram_)
+    {
+        const ShaderParameter* info = shaderProgram_->GetParameter(param);
+        if (info)
+        {
+            if (info->bufferPtr_)
+            {
+                ConstantBuffer* buffer = info->bufferPtr_;
+                if (!buffer->IsDirty())
+                    dirtyConstantBuffers_.Push(buffer);
+                buffer->SetVector3ArrayParameter((unsigned)info->location_, 3, &matrix);
+                return;
+            }
+
+            glUniformMatrix3fv(info->location_, 1, GL_FALSE, matrix.Data());
+        }
+    }
+}
+
+void Graphics::SetShaderParameter(StringHash param, const Vector3& vector)
+{
+    if (shaderProgram_)
+    {
+        const ShaderParameter* info = shaderProgram_->GetParameter(param);
+        if (info)
+        {
+            if (info->bufferPtr_)
+            {
+                ConstantBuffer* buffer = info->bufferPtr_;
+                if (!buffer->IsDirty())
+                    dirtyConstantBuffers_.Push(buffer);
+                buffer->SetParameter((unsigned)info->location_, sizeof(Vector3), &vector);
+                return;
+            }
+
+            // Check the uniform type to avoid mismatch
+            switch (info->type_)
+            {
+            case GL_FLOAT:
+                glUniform1fv(info->location_, 1, vector.Data());
+                break;
+
+            case GL_FLOAT_VEC2:
+                glUniform2fv(info->location_, 1, vector.Data());
+                break;
+
+            case GL_FLOAT_VEC3:
+                glUniform3fv(info->location_, 1, vector.Data());
+                break;
+
+            default: break;
+            }
+        }
+    }
+}
+
+void Graphics::SetShaderParameter(StringHash param, const Matrix4& matrix)
+{
+    if (shaderProgram_)
+    {
+        const ShaderParameter* info = shaderProgram_->GetParameter(param);
+        if (info)
+        {
+            if (info->bufferPtr_)
+            {
+                ConstantBuffer* buffer = info->bufferPtr_;
+                if (!buffer->IsDirty())
+                    dirtyConstantBuffers_.Push(buffer);
+                buffer->SetParameter((unsigned)info->location_, sizeof(Matrix4), &matrix);
+                return;
+            }
+
+            glUniformMatrix4fv(info->location_, 1, GL_FALSE, matrix.Data());
+        }
+    }
+}
+
+void Graphics::SetShaderParameter(StringHash param, const Vector4& vector)
+{
+    if (shaderProgram_)
+    {
+        const ShaderParameter* info = shaderProgram_->GetParameter(param);
+        if (info)
+        {
+            if (info->bufferPtr_)
+            {
+                ConstantBuffer* buffer = info->bufferPtr_;
+                if (!buffer->IsDirty())
+                    dirtyConstantBuffers_.Push(buffer);
+                buffer->SetParameter((unsigned)info->location_, sizeof(Vector4), &vector);
+                return;
+            }
+
+            // Check the uniform type to avoid mismatch
+            switch (info->type_)
+            {
+            case GL_FLOAT:
+                glUniform1fv(info->location_, 1, vector.Data());
+                break;
+
+            case GL_FLOAT_VEC2:
+                glUniform2fv(info->location_, 1, vector.Data());
+                break;
+
+            case GL_FLOAT_VEC3:
+                glUniform3fv(info->location_, 1, vector.Data());
+                break;
+
+            case GL_FLOAT_VEC4:
+                glUniform4fv(info->location_, 1, vector.Data());
+                break;
+
+            default: break;
+            }
+        }
+    }
+}
+
+void Graphics::SetShaderParameter(StringHash param, const Matrix3x4& matrix)
+{
+    if (shaderProgram_)
+    {
+        const ShaderParameter* info = shaderProgram_->GetParameter(param);
+        if (info)
+        {
+            // Expand to a full Matrix4
+            static Matrix4 fullMatrix;
+            fullMatrix.m00_ = matrix.m00_;
+            fullMatrix.m01_ = matrix.m01_;
+            fullMatrix.m02_ = matrix.m02_;
+            fullMatrix.m03_ = matrix.m03_;
+            fullMatrix.m10_ = matrix.m10_;
+            fullMatrix.m11_ = matrix.m11_;
+            fullMatrix.m12_ = matrix.m12_;
+            fullMatrix.m13_ = matrix.m13_;
+            fullMatrix.m20_ = matrix.m20_;
+            fullMatrix.m21_ = matrix.m21_;
+            fullMatrix.m22_ = matrix.m22_;
+            fullMatrix.m23_ = matrix.m23_;
+
+            if (info->bufferPtr_)
+            {
+                ConstantBuffer* buffer = info->bufferPtr_;
+                if (!buffer->IsDirty())
+                    dirtyConstantBuffers_.Push(buffer);
+                buffer->SetParameter((unsigned)info->location_, sizeof(Matrix4), &fullMatrix);
+                return;
+            }
+
+            glUniformMatrix4fv(info->location_, 1, GL_FALSE, fullMatrix.Data());
+        }
+    }
+}
+
+void Graphics::SetShaderParameter(StringHash param, const Variant& value)
+{
+    switch (value.GetType())
+    {
+    case VAR_BOOL:
+        SetShaderParameter(param, value.GetBool());
+        break;
+
+    case VAR_FLOAT:
+        SetShaderParameter(param, value.GetFloat());
+        break;
+
+    case VAR_VECTOR2:
+        SetShaderParameter(param, value.GetVector2());
+        break;
+
+    case VAR_VECTOR3:
+        SetShaderParameter(param, value.GetVector3());
+        break;
+
+    case VAR_VECTOR4:
+        SetShaderParameter(param, value.GetVector4());
+        break;
+
+    case VAR_COLOR:
+        SetShaderParameter(param, value.GetColor());
+        break;
+
+    case VAR_MATRIX3:
+        SetShaderParameter(param, value.GetMatrix3());
+        break;
+
+    case VAR_MATRIX3X4:
+        SetShaderParameter(param, value.GetMatrix3x4());
+        break;
+
+    case VAR_MATRIX4:
+        SetShaderParameter(param, value.GetMatrix4());
+        break;
+
+    case VAR_BUFFER:
+        {
+            const PODVector<unsigned char>& buffer = value.GetBuffer();
+            if (buffer.Size() >= sizeof(float))
+                SetShaderParameter(param, reinterpret_cast<const float*>(&buffer[0]), buffer.Size() / sizeof(float));
+        }
+        break;
+
+    default:
+        // Unsupported parameter type, do nothing
+        break;
+    }
+}
+
+bool Graphics::NeedParameterUpdate(ShaderParameterGroup group, const void* source)
+{
+    return shaderProgram_ ? shaderProgram_->NeedParameterUpdate(group, source) : false;
+}
+
+bool Graphics::HasShaderParameter(StringHash param)
+{
+    return shaderProgram_ && shaderProgram_->HasParameter(param);
+}
+
+bool Graphics::HasTextureUnit(TextureUnit unit)
+{
+    return shaderProgram_ && shaderProgram_->HasTextureUnit(unit);
+}
+
+void Graphics::ClearParameterSource(ShaderParameterGroup group)
+{
+    if (shaderProgram_)
+        shaderProgram_->ClearParameterSource(group);
+}
+
+void Graphics::ClearParameterSources()
+{
+    ShaderProgram::ClearParameterSources();
+}
+
+void Graphics::ClearTransformSources()
+{
+    if (shaderProgram_)
+    {
+        shaderProgram_->ClearParameterSource(SP_CAMERA);
+        shaderProgram_->ClearParameterSource(SP_OBJECT);
+    }
+}
+
+void Graphics::SetTexture(unsigned index, Texture* texture)
+{
+    if (index >= MAX_TEXTURE_UNITS)
+        return;
+
+    // Check if texture is currently bound as a rendertarget. In that case, use its backup texture, or blank if not defined
+    if (texture)
+    {
+        if (renderTargets_[0] && renderTargets_[0]->GetParentTexture() == texture)
+            texture = texture->GetBackupTexture();
+    }
+
+    if (textures_[index] != texture)
+    {
+        if (impl_->activeTexture_ != index)
+        {
+            glActiveTexture(GL_TEXTURE0 + index);
+            impl_->activeTexture_ = index;
+        }
+
+        if (texture)
+        {
+            unsigned glType = texture->GetTarget();
+            // Unbind old texture type if necessary
+            if (textureTypes_[index] && textureTypes_[index] != glType)
+                glBindTexture(textureTypes_[index], 0);
+            glBindTexture(glType, texture->GetGPUObject());
+            textureTypes_[index] = glType;
+
+            if (texture->GetParametersDirty())
+                texture->UpdateParameters();
+        }
+        else if (textureTypes_[index])
+        {
+            glBindTexture(textureTypes_[index], 0);
+            textureTypes_[index] = 0;
+        }
+
+        textures_[index] = texture;
+    }
+    else
+    {
+        if (texture && texture->GetParametersDirty())
+        {
+            if (impl_->activeTexture_ != index)
+            {
+                glActiveTexture(GL_TEXTURE0 + index);
+                impl_->activeTexture_ = index;
+            }
+
+            glBindTexture(texture->GetTarget(), texture->GetGPUObject());
+            texture->UpdateParameters();
+        }
+    }
+}
+
+void Graphics::SetTextureForUpdate(Texture* texture)
+{
+    if (impl_->activeTexture_ != 0)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        impl_->activeTexture_ = 0;
+    }
+
+    unsigned glType = texture->GetTarget();
+    // Unbind old texture type if necessary
+    if (textureTypes_[0] && textureTypes_[0] != glType)
+        glBindTexture(textureTypes_[0], 0);
+    glBindTexture(glType, texture->GetGPUObject());
+    textureTypes_[0] = glType;
+    textures_[0] = texture;
+}
+
+void Graphics::SetDefaultTextureFilterMode(TextureFilterMode mode)
+{
+    if (mode != defaultTextureFilterMode_)
+    {
+        defaultTextureFilterMode_ = mode;
+        SetTextureParametersDirty();
+    }
+}
+
+void Graphics::SetTextureAnisotropy(unsigned level)
+{
+    if (level != textureAnisotropy_)
+    {
+        textureAnisotropy_ = level;
+        SetTextureParametersDirty();
+    }
+}
+
+void Graphics::SetTextureParametersDirty()
+{
+    MutexLock lock(gpuObjectMutex_);
+
+    for (PODVector<GPUObject*>::Iterator i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+    {
+        Texture* texture = dynamic_cast<Texture*>(*i);
+        if (texture)
+            texture->SetParametersDirty();
+    }
+}
+
+void Graphics::ResetRenderTargets()
+{
+    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
+        SetRenderTarget(i, (RenderSurface*)0);
+    SetDepthStencil((RenderSurface*)0);
+    SetViewport(IntRect(0, 0, width_, height_));
+}
+
+void Graphics::ResetRenderTarget(unsigned index)
+{
+    SetRenderTarget(index, (RenderSurface*)0);
+}
+
+void Graphics::ResetDepthStencil()
+{
+    SetDepthStencil((RenderSurface*)0);
+}
+
+void Graphics::SetRenderTarget(unsigned index, RenderSurface* renderTarget)
+{
+    if (index >= MAX_RENDERTARGETS)
+        return;
+
+    if (renderTarget != renderTargets_[index])
+    {
+        renderTargets_[index] = renderTarget;
+
+        // If the rendertarget is also bound as a texture, replace with backup texture or null
+        if (renderTarget)
+        {
+            Texture* parentTexture = renderTarget->GetParentTexture();
+
+            for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
+            {
+                if (textures_[i] == parentTexture)
+                    SetTexture(i, textures_[i]->GetBackupTexture());
+            }
+        }
+
+        impl_->fboDirty_ = true;
+    }
+}
+
+void Graphics::SetRenderTarget(unsigned index, Texture2D* texture)
+{
+    RenderSurface* renderTarget = 0;
+    if (texture)
+        renderTarget = texture->GetRenderSurface();
+
+    SetRenderTarget(index, renderTarget);
+}
+
+void Graphics::SetDepthStencil(RenderSurface* depthStencil)
+{
+    // If we are using a rendertarget texture, it is required in OpenGL to also have an own depth-stencil
+    // Create a new depth-stencil texture as necessary to be able to provide similar behaviour as Direct3D9
+    if (renderTargets_[0] && !depthStencil)
+    {
+        int width = renderTargets_[0]->GetWidth();
+        int height = renderTargets_[0]->GetHeight();
+
+        // Direct3D9 default depth-stencil can not be used when rendertarget is larger than the window.
+        // Check size similarly
+        if (width <= width_ && height <= height_)
+        {
+            int searchKey = (width << 16) | height;
+            HashMap<int, SharedPtr<Texture2D> >::Iterator i = depthTextures_.Find(searchKey);
+            if (i != depthTextures_.End())
+                depthStencil = i->second_->GetRenderSurface();
+            else
+            {
+                SharedPtr<Texture2D> newDepthTexture(new Texture2D(context_));
+                newDepthTexture->SetSize(width, height, GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL);
+                depthTextures_[searchKey] = newDepthTexture;
+                depthStencil = newDepthTexture->GetRenderSurface();
+            }
+        }
+    }
+
+    if (depthStencil != depthStencil_)
+    {
+        depthStencil_ = depthStencil;
+        impl_->fboDirty_ = true;
+    }
+}
+
+void Graphics::SetDepthStencil(Texture2D* texture)
+{
+    RenderSurface* depthStencil = 0;
+    if (texture)
+        depthStencil = texture->GetRenderSurface();
+
+    SetDepthStencil(depthStencil);
+}
+
+void Graphics::SetViewport(const IntRect& rect)
+{
+    PrepareDraw();
+
+    IntVector2 rtSize = GetRenderTargetDimensions();
+
+    IntRect rectCopy = rect;
+
+    if (rectCopy.right_ <= rectCopy.left_)
+        rectCopy.right_ = rectCopy.left_ + 1;
+    if (rectCopy.bottom_ <= rectCopy.top_)
+        rectCopy.bottom_ = rectCopy.top_ + 1;
+    rectCopy.left_ = Clamp(rectCopy.left_, 0, rtSize.x_);
+    rectCopy.top_ = Clamp(rectCopy.top_, 0, rtSize.y_);
+    rectCopy.right_ = Clamp(rectCopy.right_, 0, rtSize.x_);
+    rectCopy.bottom_ = Clamp(rectCopy.bottom_, 0, rtSize.y_);
+
+    // Use Direct3D convention with the vertical coordinates ie. 0 is top
+    glViewport(rectCopy.left_, rtSize.y_ - rectCopy.bottom_, rectCopy.Width(), rectCopy.Height());
+    viewport_ = rectCopy;
+
+    // Disable scissor test, needs to be re-enabled by the user
+    SetScissorTest(false);
+}
+
+void Graphics::SetBlendMode(BlendMode mode)
+{
+    if (mode != blendMode_)
+    {
+        if (mode == BLEND_REPLACE)
+            glDisable(GL_BLEND);
+        else
+        {
+            glEnable(GL_BLEND);
+            glBlendFunc(glSrcBlend[mode], glDestBlend[mode]);
+            glBlendEquation(glBlendOp[mode]);
+        }
+
+        blendMode_ = mode;
+    }
+}
+
+void Graphics::SetColorWrite(bool enable)
+{
+    if (enable != colorWrite_)
+    {
+        if (enable)
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        else
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+        colorWrite_ = enable;
+    }
+}
+
+void Graphics::SetCullMode(CullMode mode)
+{
+    if (mode != cullMode_)
+    {
+        if (mode == CULL_NONE)
+            glDisable(GL_CULL_FACE);
+        else
+        {
+            // Use Direct3D convention, ie. clockwise vertices define a front face
+            glEnable(GL_CULL_FACE);
+            glCullFace(mode == CULL_CCW ? GL_FRONT : GL_BACK);
+        }
+
+        cullMode_ = mode;
+    }
+}
+
+void Graphics::SetDepthBias(float constantBias, float slopeScaledBias)
+{
+    if (constantBias != constantDepthBias_ || slopeScaledBias != slopeScaledDepthBias_)
+    {
+>>>>>>> refs/remotes/urho3d/master
 #ifndef GL_ES_VERSION_2_0
 			if (slopeScaledBias != 0.0f)
 			{
