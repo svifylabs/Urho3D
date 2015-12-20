@@ -419,8 +419,8 @@ bool Engine::Initialize(const VariantMap& parameters)
     }
 #endif
 
-	/// IMUI 
-	context_->RegisterSubsystem(new IMUIContext(context_));
+	if(GetParameter(parameters, "UseIMUI", true).GetBool())
+		context_->RegisterSubsystem(new IMUI(context_));
 
     frameTimer_.Reset();
 

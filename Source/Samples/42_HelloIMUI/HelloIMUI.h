@@ -51,7 +51,8 @@ public:
 	virtual void Setup();
     /// Setup after engine initialization and before running the main loop.
     virtual void Start();
-
+	/// Cleanup after the main loop. Called by Application.
+	virtual void Stop();
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
     virtual String GetScreenJoystickPatchString() const { return
