@@ -73,8 +73,8 @@ void HelloIMUI::Start()
 	/// create custom imgui settings.
 	IMUISettings imuisettings;
 	
-	imuisettings.font("Fonts/Hack-Regular.ttf", 13, false);
-	imuisettings.font("Fonts/fontawesome-webfont.ttf", 13, true);
+	imuisettings.font("Fonts/Anonymous Pro.ttf",14, false);
+	imuisettings.font("Fonts/fontawesome-webfont.ttf", 14, true);
 
 	Vector<ImWchar> iconRanges;
 	iconRanges.Push(0xf000);
@@ -88,8 +88,8 @@ void HelloIMUI::Start()
 
 	imuisettings.fontGlyphRanges("fontawesome-webfont", iconRanges);
 	imuisettings.fontConfig("fontawesome-webfont", true, true, true, 1, 1);
-	imuisettings.fontGlyphRanges("Hack-Regular", defaultranges);
-	imuisettings.fontConfig("Hack-Regular", true, false, true, 1, 1);
+	imuisettings.fontGlyphRanges("Anonymous Pro", defaultranges);
+	imuisettings.fontConfig("Anonymous Pro", false, false, false,3, 1);
 
 	imui->SetSettings(imuisettings);
 
