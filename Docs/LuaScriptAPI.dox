@@ -3660,6 +3660,7 @@ Methods:
 - Node* new()
 - void delete()
 - bool SaveXML(File* dest, const String indentation = "\t") const
+- bool SaveJSON(File* dest, const String indentation = "\t") const
 - void SetName(const String name)
 - void SetPosition(const Vector3& position)
 - void SetPosition2D(const Vector2& position)
@@ -3790,6 +3791,7 @@ Methods:
 - const PODVector<Node*>& GetChildrenWithComponent(const String type, bool recursive = false)
 - bool Load(Deserializer& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false, CreateMode mode = REPLICATED)
 - bool LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false, CreateMode mode = REPLICATED)
+- bool LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false, CreateMode mode = REPLICATED)
 - Node* CreateChild(unsigned id, CreateMode mode)
 - void AddComponent(Component* component, unsigned id, CreateMode mode)
 
@@ -4207,11 +4209,13 @@ Methods:
 - void SetMaxNetworkAngularVelocity(float velocity)
 - const PODVector<PhysicsRaycastResult>& Raycast(const Ray& ray, float maxDistance, unsigned collisionMask = M_MAX_UNSIGNED)
 - PhysicsRaycastResult RaycastSingle(const Ray& ray, float maxDistance, unsigned collisionMask = M_MAX_UNSIGNED)
+- PhysicsRaycastResult RaycastSingleSegmented(const Ray& ray, float maxDistance, float segmentDistance, unsigned collisionMask = M_MAX_UNSIGNED)
 - PhysicsRaycastResult SphereCast(const Ray& ray, float radius, float maxDistance, unsigned collisionMask = M_MAX_UNSIGNED)
 - PhysicsRaycastResult ConvexCast(CollisionShape* shape, const Vector3& startPos, const Quaternion& startRot, const Vector3& endPos, const Quaternion& endRot, unsigned collisionMask = M_MAX_UNSIGNED)
 - const PODVector<RigidBody*>& GetRigidBodies(const Sphere& sphere, unsigned collisionMask = M_MAX_UNSIGNED)
 - const PODVector<RigidBody*>& GetRigidBodies(const BoundingBox& box, unsigned collisionMask = M_MAX_UNSIGNED)
 - const PODVector<RigidBody*>& GetRigidBodies(const RigidBody* body)
+- const PODVector<RigidBody*>& GetCollidingBodies(const RigidBody* body)
 - void DrawDebugGeometry(bool depthTest)
 - void RemoveCachedGeometry(Model* model)
 - Vector3 GetGravity() const
@@ -4235,7 +4239,6 @@ Properties:
 - bool splitImpulse
 - int fps
 - float maxNetworkAngularVelocity
-- bool applyingTransforms
 
 <a name="Class_PhysicsWorld2D"></a>
 ### PhysicsWorld2D : Component
@@ -4698,7 +4701,9 @@ Methods:
 - void SetMaterialQuality(int quality)
 - void SetDrawShadows(bool enable)
 - void SetShadowMapSize(int size)
-- void SetShadowQuality(int quality)
+- void SetShadowQuality(ShadowQuality quality)
+- void SetShadowSoftness(float shadowSoftness)
+- void SetVSMShadowParameters(float minVariance, float lightBleedingReduction)
 - void SetReuseShadowMaps(bool enable)
 - void SetMaxShadowMaps(int shadowMaps)
 - void SetDynamicInstancing(bool enable)
@@ -4722,7 +4727,9 @@ Methods:
 - int GetTextureQuality() const
 - int GetMaterialQuality() const
 - int GetShadowMapSize() const
-- int GetShadowQuality() const
+- ShadowQuality GetShadowQuality() const
+- float GetShadowSoftness() const
+- Vector2 GetVSMShadowParameters() const
 - bool GetReuseShadowMaps() const
 - int GetMaxShadowMaps() const
 - bool GetDynamicInstancing() const
@@ -4759,7 +4766,8 @@ Properties:
 - int textureQuality
 - int materialQuality
 - int shadowMapSize
-- int shadowQuality
+- ShadowQuality shadowQuality
+- float shadowSoftness
 - bool reuseShadowMaps
 - int maxShadowMaps
 - bool dynamicInstancing
@@ -5058,6 +5066,10 @@ Methods:
 - bool SaveXML(File* dest, const String indentation = "\t") const
 - bool LoadXML(const String fileName)
 - bool SaveXML(const String fileName, const String indentation = "\t") const
+- bool LoadJSON(File* source)
+- bool SaveJSON(File* dest, const String indentation = "\t") const
+- bool LoadJSON(const String fileName)
+- bool SaveJSON(const String fileName, const String indentation = "\t") const
 - Node* Instantiate(File* source, const Vector3& position, const Quaternion& rotation, CreateMode mode = REPLICATED)
 - Node* Instantiate(const String fileName, const Vector3& position, const Quaternion& rotation, CreateMode mode = REPLICATED)
 - Node* InstantiateXML(File* source, const Vector3& position, const Quaternion& rotation, CreateMode mode = REPLICATED)
@@ -6243,6 +6255,9 @@ Methods:
 - void SetUseScreenKeyboard(bool enable)
 - void SetUseMutableGlyphs(bool enable)
 - void SetForceAutoHint(bool enable)
+- void SetScale(float scale)
+- void SetWidth(float size)
+- void SetHeight(float size)
 - UIElement* GetRoot() const
 - UIElement* GetRootModalElement() const
 - Cursor* GetCursor() const
@@ -6265,6 +6280,7 @@ Methods:
 - bool GetForceAutoHint() const
 - bool HasModalElement() const
 - bool IsDragging() const
+- float GetScale() const
 
 Properties:
 
@@ -6286,6 +6302,7 @@ Properties:
 - bool useMutableGlyphs
 - bool forceAutoHint
 - bool modalElement (readonly)
+- float scale
 
 <a name="Class_UIElement"></a>
 ### UIElement : Animatable
@@ -7487,6 +7504,15 @@ Properties:
 - int VS
 - int PS
 
+### ShadowQuality
+
+- int SHADOWQUALITY_SIMPLE_16BIT
+- int SHADOWQUALITY_SIMPLE_24BIT
+- int SHADOWQUALITY_PCF_16BIT
+- int SHADOWQUALITY_PCF_24BIT
+- int SHADOWQUALITY_VSM
+- int SHADOWQUALITY_BLUR_VSM
+
 ### ShapeType
 
 - int SHAPE_BOX
@@ -8258,10 +8284,6 @@ Properties:
 - unsigned SCAN_DIRS
 - unsigned SCAN_FILES
 - unsigned SCAN_HIDDEN
-- int SHADOWQUALITY_HIGH_16BIT
-- int SHADOWQUALITY_HIGH_24BIT
-- int SHADOWQUALITY_LOW_16BIT
-- int SHADOWQUALITY_LOW_24BIT
 - String SOUND_AMBIENT
 - String SOUND_EFFECT
 - String SOUND_MASTER

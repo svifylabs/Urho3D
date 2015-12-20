@@ -220,8 +220,6 @@ static HWND GetWindowHandle(SDL_Window* window)
     return sysInfo.info.win.window;
 }
 
-static unsigned readableDepthFormat = 0;
-
 const Vector2 Graphics::pixelUVOffset(0.0f, 0.0f);
 
 Graphics::Graphics(Context* context) :
@@ -702,10 +700,15 @@ void Graphics::Clear(unsigned flags, const Color& color, float depth, unsigned s
 {
     IntVector2 rtSize = GetRenderTargetDimensions();
 
+    bool oldColorWrite = colorWrite_;
+    bool oldDepthWrite = depthWrite_;
+
     // D3D11 clear always clears the whole target regardless of viewport or scissor test settings
     // Emulate partial clear by rendering a quad
     if (!viewport_.left_ && !viewport_.top_ && viewport_.right_ == rtSize.x_ && viewport_.bottom_ == rtSize.y_)
     {
+        // Make sure we use the read-write version of the depth stencil
+        SetDepthWrite(true);
         PrepareDraw();
 
         if ((flags & CLEAR_COLOR) && impl_->renderTargetViews_[0])
@@ -748,11 +751,13 @@ void Graphics::Clear(unsigned flags, const Color& color, float depth, unsigned s
 
         geometry->Draw(this);
 
-        SetColorWrite(true);
-        SetDepthWrite(true);
         SetStencilTest(false);
         ClearParameterSources();
     }
+
+    // Restore color & depth write state now
+    SetColorWrite(oldColorWrite);
+    SetDepthWrite(oldDepthWrite);
 }
 
 bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
@@ -1283,6 +1288,14 @@ void Graphics::SetShaderParameter(StringHash param, const Variant& value)
         SetShaderParameter(param, value.GetMatrix4());
         break;
 
+    case VAR_BUFFER:
+        {
+            const PODVector<unsigned char>& buffer = value.GetBuffer();
+            if (buffer.Size() >= sizeof(float))
+                SetShaderParameter(param, reinterpret_cast<const float*>(&buffer[0]), buffer.Size() / sizeof(float));
+        }
+        break;
+
     default:
         // Unsupported parameter type, do nothing
         break;
@@ -1548,6 +1561,8 @@ void Graphics::SetDepthWrite(bool enable)
     {
         depthWrite_ = enable;
         depthStateDirty_ = true;
+        // Also affects whether a read-only version of depth-stencil should be bound, to allow sampling
+        renderTargetsDirty_ = true;
     }
 }
 
@@ -2517,6 +2532,10 @@ void Graphics::PrepareDraw()
     {
         impl_->depthStencilView_ =
             depthStencil_ ? (ID3D11DepthStencilView*)depthStencil_->GetRenderTargetView() : impl_->defaultDepthStencilView_;
+
+        // If possible, bind a read-only depth stencil view to allow reading depth in shader
+        if (!depthWrite_ && depthStencil_ && depthStencil_->GetReadOnlyView())
+            impl_->depthStencilView_ = (ID3D11DepthStencilView*)depthStencil_->GetReadOnlyView();
 
         for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
             impl_->renderTargetViews_[i] =

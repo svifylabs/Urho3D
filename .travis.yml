@@ -35,11 +35,12 @@ env:
     - CCACHE_SLOPPINESS=pch_defines,time_macros
     - CCACHE_COMPRESS=1
     - CCACHE_MAXSIZE=100M
+    - URHO3D_DEPLOYMENT_TARGET=generic
 matrix:
   fast_finish: true
   include:
     - &Linux-64bit
-      addons: {apt: {sources: [*default_sources, kubuntu-backports, ubuntu-toolchain-r-test], packages: [cmake, g++-4.9, &linux_packages [*default_packages, libasound2-dev, rpm]]}}
+      addons: {apt: {sources: [*default_sources, kubuntu-backports, ubuntu-toolchain-r-test], packages: [cmake, g++-4.9, &linux_packages [*default_packages, libasound2-dev, libpulse-dev, rpm]]}}
       compiler: gcc-64bit-static
       env: LINUX=1 URHO3D_LIB_TYPE=STATIC URHO3D_UPDATE_SOURCE_TREE=1 COVERITY_SCAN_THRESHOLD=100 SF_DEFAULT=linux:Linux-64bit-STATIC.tar.gz
     - &Linux-64bit-shared
@@ -116,10 +117,7 @@ before_script:
   # For some reason clang compiler toolchain installation in Travis CI VM does not have symlink in the ccache symlinks directory, so workaround it
   - if [ "$CC"  == "clang" ]; then ln -s $(which ccache) $HOME/clang && ln -s $(which ccache) $HOME/clang++ && export PATH=$HOME:$PATH; fi
   - rake ci_setup_cache
-script: rake ci
-after_success:
-  - if [ $SITE_UPDATE ]; then rake ci_site_update || ! [ $RELEASE_TAG ]; fi
-  - if [ $PACKAGE_UPLOAD ]; then rake ci_package_upload && if [ $LINUX ] && [ ! "$URHO3D_64BIT" == "0" ]; then rake ci_package_upload URHO3D_USE_LIB64_RPM=1; fi || ! [ $RELEASE_TAG ]; fi
+script: rake ci && if [ $SITE_UPDATE ]; then rake ci_site_update; fi && if [ $PACKAGE_UPLOAD ]; then rake ci_package_upload && if [ $LINUX ] && [ ! "$URHO3D_64BIT" == "0" ]; then rake ci_package_upload URHO3D_USE_LIB64_RPM=1; fi; fi
 after_script:
   - rake ci_teardown_cache
   - if [ ${TRAVIS_JOB_NUMBER##*.} == 1 ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then rake ci_create_mirrors; fi
@@ -134,7 +132,7 @@ cache: ccache
 sudo: false
 addons:
   apt:
-    packages: libasound2-dev
+    packages: [libasound2-dev, libpulse-dev]
   coverity_scan:
     project:
       name: urho3d/Urho3D
@@ -167,7 +165,7 @@ language: cpp
 compiler: gcc
 cache: ccache
 sudo: false
-addons: {apt: {sources: [kubuntu-backports, ubuntu-toolchain-r-test], packages: [cmake, g++-4.9, libasound2-dev]}}
+addons: {apt: {sources: [kubuntu-backports, ubuntu-toolchain-r-test], packages: [cmake, g++-4.9, libasound2-dev, libpulse-dev]}}
 env:
   global:
     - secure: DE9IUM+pIV757GU0ccfDJhA752442pKu3DyBthrzHW9+GbsqbfuJOx045CYNN5vOWutFPC0A51B9WxhLNpXXqD3mfU8MhP1gkF7SskrHvcAPrCyfdqZf1Q8XDP5phm2KbHhhwxQMYmmicd6yj8DPNy2wRoSgPSDp/ZUDk51XZDU=
@@ -194,7 +192,7 @@ language: android
 android: {components: [build-tools-22.0.1]}
 cache: {directories: $HOME/.ccache}
 sudo: false
-addons: {apt: {sources: &default_sources george-edison55-precise-backports, packages: &default_packages [doxygen, graphviz, libasound2-dev, g++-multilib]}}
+addons: {apt: {sources: &default_sources george-edison55-precise-backports, packages: &default_packages [doxygen, graphviz, g++-multilib]}}
 env:
   global:
     - secure: DE9IUM+pIV757GU0ccfDJhA752442pKu3DyBthrzHW9+GbsqbfuJOx045CYNN5vOWutFPC0A51B9WxhLNpXXqD3mfU8MhP1gkF7SskrHvcAPrCyfdqZf1Q8XDP5phm2KbHhhwxQMYmmicd6yj8DPNy2wRoSgPSDp/ZUDk51XZDU=
@@ -256,8 +254,7 @@ before_script:
   - if [ "$ABI" == "armeabi-v7a" ]; then export C_PATH=$(pwd)/android-ndk/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin C_PREFIX=arm-linux-androideabi; fi
   - export PATH=$(whereis -b ccache |grep -o '\S*lib\S*'):$C_PATH:$PATH; for f in $C_PATH/$C_PREFIX-{gcc,g++}; do touch -d "2015-01-01 00:00:00 +0800" $f; done
   - rake ci_setup_cache
-script: rake ci
-after_success: if [ $PACKAGE_UPLOAD ]; then rake ci_package_upload || ! [ $RELEASE_TAG ]; fi
+script: rake ci && if [ $PACKAGE_UPLOAD ]; then rake ci_package_upload; fi
 after_script: rake ci_teardown_cache
 
 ---
@@ -266,7 +263,7 @@ branch: {name: RPI-CI, active: yes}
 language: cpp
 cache: ccache
 sudo: false
-addons: {apt: {sources: &default_sources george-edison55-precise-backports, packages: &default_packages [doxygen, graphviz, libasound2-dev, g++-multilib, rpm]}}
+addons: {apt: {sources: &default_sources george-edison55-precise-backports, packages: &default_packages [doxygen, graphviz, g++-multilib, rpm]}}
 env:
   global:
     - secure: DE9IUM+pIV757GU0ccfDJhA752442pKu3DyBthrzHW9+GbsqbfuJOx045CYNN5vOWutFPC0A51B9WxhLNpXXqD3mfU8MhP1gkF7SskrHvcAPrCyfdqZf1Q8XDP5phm2KbHhhwxQMYmmicd6yj8DPNy2wRoSgPSDp/ZUDk51XZDU=
@@ -294,15 +291,14 @@ matrix:
     - compiler: gcc-armeabi-v7a-with-NEON-shared
       env: URHO3D_LIB_TYPE=SHARED RPI_ABI='armeabi-v7a with NEON'
 before_script:
-  - git clone --depth 1 https://github.com/raspberrypi/tools.git rpi-tools && export RPI_PREFIX=$(pwd)/rpi-tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf && git clone --depth 1 --branch strip https://github.com/urho3d/rpi-sysroot.git && export RPI_SYSROOT=$(pwd)/rpi-sysroot && for f in $RPI_PREFIX-{gcc,g++}; do touch -d "2015-01-01 00:00:00 +0800" $f; done
+  - git clone --depth 1 https://github.com/raspberrypi/tools.git rpi-tools && export RPI_PREFIX=$(pwd)/rpi-tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin/arm-linux-gnueabihf && git clone --depth 1 https://github.com/urho3d/rpi-sysroot.git && export RPI_SYSROOT=$(pwd)/rpi-sysroot && for f in $RPI_PREFIX-{gcc,g++}; do touch -d "2015-01-01 00:00:00 +0800" $f; done
   - export TRAVIS_COMMIT=$TRAVIS_COMMIT~
   - export TAG=$(git describe --exact-match $TRAVIS_COMMIT 2>/dev/null); if [[ $TAG =~ [[:digit:]]+\.[[:digit:]]+ ]]; then export RELEASE_TAG=$TAG; fi
   - export COMMIT_MESSAGE=$(git log --format=%B -n 1 $TRAVIS_COMMIT)
   - if [ ${TRAVIS_JOB_NUMBER##*.} -lt $PACKAGE_JOB_END ] && ([ $RELEASE_TAG ] || (! [[ $TRAVIS_BRANCH =~ [^-]+-[^-]+-CI ]] && echo $COMMIT_MESSAGE |grep -cq '\[ci package\]')); then export PACKAGE_UPLOAD=1; fi
   - export PATH=$(whereis -b ccache |grep -o '\S*lib\S*'):${RPI_PREFIX%/*}:$PATH
   - rake ci_setup_cache
-script: rake ci
-after_success: if [ $PACKAGE_UPLOAD ]; then rake ci_package_upload || ! [ $RELEASE_TAG ]; fi
+script: rake ci && if [ $PACKAGE_UPLOAD ]; then rake ci_package_upload; fi
 after_script: rake ci_teardown_cache
 
 ---
@@ -321,16 +317,11 @@ env:
     - CCACHE_COMPRESS=1
     - CCACHE_MAXSIZE=300M
   matrix:
-    - MAKEFILE=1    URHO3D_LIB_TYPE=STATIC
-    - MAKEFILE=1    URHO3D_LIB_TYPE=SHARED
-    - MAKEFILE=1    URHO3D_LIB_TYPE=STATIC URHO3D_64BIT=0
-    - MAKEFILE=1    URHO3D_LIB_TYPE=SHARED URHO3D_64BIT=0
-    - XCODE=1       URHO3D_LIB_TYPE=STATIC DEPLOYMENT_TARGET=10.11 SF_DEFAULT=mac:OSX-64bit-STATIC.tar.gz
-    - XCODE=1       URHO3D_LIB_TYPE=SHARED DEPLOYMENT_TARGET=10.11
-    - XCODE=1       URHO3D_LIB_TYPE=STATIC DEPLOYMENT_TARGET=10.11 URHO3D_64BIT=0
-    - XCODE=1       URHO3D_LIB_TYPE=SHARED DEPLOYMENT_TARGET=10.11 URHO3D_64BIT=0
-    - XCODE=1 IOS=1 URHO3D_LIB_TYPE=STATIC DEPLOYMENT_TARGET=9.1  URHO3D_64BIT=0
-    - XCODE=1 IOS=1 URHO3D_LIB_TYPE=STATIC DEPLOYMENT_TARGET=9.1
+    - MAKEFILE=1    URHO3D_LIB_TYPE=SHARED URHO3D_DEPLOYMENT_TARGET=generic
+    - XCODE=1       URHO3D_LIB_TYPE=STATIC CMAKE_OSX_DEPLOYMENT_TARGET=10.11 SF_DEFAULT=mac:OSX-64bit-STATIC.tar.gz
+    - XCODE=1       URHO3D_LIB_TYPE=SHARED CMAKE_OSX_DEPLOYMENT_TARGET=10.11
+    - XCODE=1 IOS=1 URHO3D_LIB_TYPE=STATIC IPHONEOS_DEPLOYMENT_TARGET=9.1 URHO3D_64BIT=0
+    - XCODE=1 IOS=1 URHO3D_LIB_TYPE=STATIC IPHONEOS_DEPLOYMENT_TARGET=9.1
 matrix:
   fast_finish: true
 before_script:
@@ -339,13 +330,14 @@ before_script:
   - export TAG=$(git describe --exact-match $TRAVIS_COMMIT 2>/dev/null); if [[ $TAG =~ [[:digit:]]+\.[[:digit:]]+ ]]; then export RELEASE_TAG=$TAG; fi
   - export COMMIT_MESSAGE=$(git log --format=%B -n 1 $TRAVIS_COMMIT)
   - if [ $XCODE ] && ([ $RELEASE_TAG ] || (! [[ $TRAVIS_BRANCH =~ [^-]+-[^-]+-CI ]] && echo $COMMIT_MESSAGE |grep -cq '\[ci package\]')); then export PACKAGE_UPLOAD=1; fi
-  - travis_retry brew update >/dev/null && travis_retry brew install ccache cmake
-  - if [ $PACKAGE_UPLOAD ]; then travis_retry brew install doxygen graphviz; fi
+  # travis_retry brew update >/dev/null   # Intentionally do not update homebrew formulas to avoid pulling in CMake 3.4 which has caused unexplained iOS build tree configuration problem on Travis CI
+  - which cmake >/dev/null 2>&1 || cmake=cmake
+  - if [ $PACKAGE_UPLOAD ]; then doxygen='doxygen graphviz'; fi
+  - travis_retry brew install ccache $cmake $doxygen
   - export PATH=$(brew info ccache |grep -o '\S*lib\S*'):$PATH
   - if [ $XCODE ]; then sudo cp -p $(which ccache) $(dirname $(xcodebuild -find-executable clang)) && for compiler in clang clang++; do path=$(xcodebuild -find-executable $compiler); sudo mv $path{,.orig} && sudo ln -sf $(dirname $path)/clang.orig /usr/bin/$compiler && sudo ln -sf ccache $path; done; fi
   - rake ci_setup_cache
-script: rake ci
-after_success: if [ $PACKAGE_UPLOAD ]; then rake ci_package_upload || ! [ $RELEASE_TAG ]; fi
+script: rake ci && if [ $PACKAGE_UPLOAD ]; then rake ci_package_upload; fi
 after_script: rake ci_teardown_cache
 
 ---
@@ -354,7 +346,7 @@ branch: {name: Emscripten-CI, active: yes}
 language: cpp
 cache: ccache
 sudo: false
-addons: {apt: {sources: [george-edison55-precise-backports, kubuntu-backports, ubuntu-toolchain-r-test], packages: [cmake, doxygen, graphviz, g++-4.9, libasound2-dev]}}
+addons: {apt: {sources: [george-edison55-precise-backports, kubuntu-backports, ubuntu-toolchain-r-test], packages: [cmake, doxygen, graphviz, g++-4.9]}}
 env:
   global:
     - secure: DE9IUM+pIV757GU0ccfDJhA752442pKu3DyBthrzHW9+GbsqbfuJOx045CYNN5vOWutFPC0A51B9WxhLNpXXqD3mfU8MhP1gkF7SskrHvcAPrCyfdqZf1Q8XDP5phm2KbHhhwxQMYmmicd6yj8DPNy2wRoSgPSDp/ZUDk51XZDU=
@@ -382,8 +374,7 @@ before_script:
   - git clone --depth 1 https://github.com/urho3d/emscripten-sdk.git && emscripten-sdk/emsdk activate --build=Release sdk-master-64bit && source emscripten-sdk/emsdk_env.sh
   - export PATH=$(whereis -b ccache |grep -o '\S*lib\S*'):$PATH; for f in $EMSCRIPTEN/{emcc,em++}; do touch -d "2015-09-01 00:00:00 +0800" $f; done
   - rake ci_setup_cache
-script: rake ci
-after_success: if [ $PACKAGE_UPLOAD ]; then rake ci_package_upload && if [ "$URHO3D_LIB_TYPE" == "SHARED" ]; then rake ci_emscripten_samples_update; fi || ! [ $RELEASE_TAG ]; fi
+script: rake ci && if [ $PACKAGE_UPLOAD ]; then rake ci_package_upload && if [ "$URHO3D_LIB_TYPE" == "SHARED" ]; then rake ci_emscripten_samples_update; fi; fi
 after_script: rake ci_teardown_cache
 
 ...
