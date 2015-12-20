@@ -32,14 +32,15 @@ Urho3D development, contributions and bugfixes by:
 - Ali Kämäräinen
 - Pete Leigh
 - Thorbjørn Lindeijer
+- Xavier Maupeu
 - Jonne Nauha
 - Paul Noome
 - David Palacios
 - Alex Parlett
 - Jordan Patterson
 - Vladimir Pobedinsky
+- Pranjal Raihan
 - Nick Royer
-- Jonathan Sandusky
 - Miika Santala
 - Hualin Song
 - James Thomas

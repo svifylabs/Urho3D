@@ -642,6 +642,10 @@ bool Graphics::BeginFrame()
             SetMode(width, height);
     }
 
+    // Re-enable depth test and depth func in case a third party program has modified it
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(glCmpFunc[depthTestMode_]);
+
     // Set default rendertarget and depth buffer
     ResetRenderTargets();
 
@@ -1378,6 +1382,14 @@ void Graphics::SetShaderParameter(StringHash param, const Variant& value)
 
     case VAR_MATRIX4:
         SetShaderParameter(param, value.GetMatrix4());
+        break;
+
+    case VAR_BUFFER:
+        {
+            const PODVector<unsigned char>& buffer = value.GetBuffer();
+            if (buffer.Size() >= sizeof(float))
+                SetShaderParameter(param, reinterpret_cast<const float*>(&buffer[0]), buffer.Size() / sizeof(float));
+        }
         break;
 
     default:

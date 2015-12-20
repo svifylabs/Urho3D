@@ -1263,6 +1263,14 @@ void Graphics::SetShaderParameter(StringHash param, const Variant& value)
         SetShaderParameter(param, value.GetMatrix4());
         break;
 
+    case VAR_BUFFER:
+        {
+            const PODVector<unsigned char>& buffer = value.GetBuffer();
+            if (buffer.Size() >= sizeof(float))
+                SetShaderParameter(param, reinterpret_cast<const float*>(&buffer[0]), buffer.Size() / sizeof(float));
+        }
+        break;
+
     default:
         // Unsupported parameter type, do nothing
         break;
@@ -2501,7 +2509,7 @@ void Graphics::PrepareDraw()
             depthStencil_ ? (ID3D11DepthStencilView*)depthStencil_->GetRenderTargetView() : impl_->defaultDepthStencilView_;
 
         // If possible, bind a read-only depth stencil view to allow reading depth in shader
-        if (!depthWrite_ && depthStencil_)
+        if (!depthWrite_ && depthStencil_ && depthStencil_->GetReadOnlyView())
             impl_->depthStencilView_ = (ID3D11DepthStencilView*)depthStencil_->GetReadOnlyView();
 
         for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
