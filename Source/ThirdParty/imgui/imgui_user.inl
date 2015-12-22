@@ -825,7 +825,7 @@ namespace ImGui {
 	{
 		ImGuiState& g = *GImGui;
 
-		auto* window = GImGui->CurrentWindow;
+		ImGuiWindow* window = GImGui->CurrentWindow;
 
 		if ((window->Flags & ImGuiWindowFlags_NoBringToFrontOnFocus) || g.Windows.back() == window)
 		{
@@ -963,7 +963,7 @@ namespace ImGui {
 	}
 
 
-	bool ImGui::ListBox(const char* label,
+	bool ListBox(const char* label,
 		int* current_item,
 		int scroll_to_item,
 		bool(*items_getter)(void*, int, const char**),
@@ -1057,10 +1057,10 @@ namespace ImGui {
 	{
 		ImGui::PushID(id);
 
-		auto* parent_win = ImGui::GetCurrentWindow();
+		ImGuiWindow* parent_win = ImGui::GetCurrentWindow();
 		char title[256];
 		ImFormatString(title, IM_ARRAYSIZE(title), "%s.child_%08x", parent_win->Name, id);
-		auto* win = FindWindowByName(title);
+		ImGuiWindow* win = FindWindowByName(title);
 		if (!win)
 		{
 			ImGui::PopID();
@@ -1069,7 +1069,7 @@ namespace ImGui {
 
 		ImVec2 pos = win->Pos;
 		pos.x -= NODE_SLOT_RADIUS;
-		auto& style = ImGui::GetStyle();
+		ImGuiStyle& style = ImGui::GetStyle();
 		pos.y += (ImGui::GetTextLineHeight() + style.ItemSpacing.y) * input;
 		pos.y += style.WindowPadding.y + ImGui::GetTextLineHeight() * 0.5f;
 
@@ -1083,10 +1083,10 @@ namespace ImGui {
 	{
 		ImGui::PushID(id);
 
-		auto* parent_win = ImGui::GetCurrentWindow();
+		ImGuiWindow* parent_win = ImGui::GetCurrentWindow();
 		char title[256];
 		ImFormatString(title, IM_ARRAYSIZE(title), "%s.child_%08x", parent_win->Name, id);
-		auto* win = FindWindowByName(title);
+		ImGuiWindow* win = FindWindowByName(title);
 		if (!win)
 		{
 			ImGui::PopID();
@@ -1095,7 +1095,7 @@ namespace ImGui {
 
 		ImVec2 pos = win->Pos;
 		pos.x += win->Size.x + NODE_SLOT_RADIUS;
-		auto& style = ImGui::GetStyle();
+		ImGuiStyle& style = ImGui::GetStyle();
 		pos.y += (ImGui::GetTextLineHeight() + style.ItemSpacing.y) * output;
 		pos.y += style.WindowPadding.y + ImGui::GetTextLineHeight() * 0.5f;
 
@@ -1156,7 +1156,7 @@ namespace ImGui {
 
 		ImGuiState& g = *GImGui;
 		const ImGuiStyle& style = g.Style;
-		auto cursor_pos = ImGui::GetCursorScreenPos();
+		ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
 
 		const ImVec2 label_size = ImGui::CalcTextSize(label, NULL, true);
 		ImVec2 graph_size;
@@ -1201,7 +1201,7 @@ namespace ImGui {
 		ImGuiState& g = *GImGui;
 		const ImGuiStyle& style = g.Style;
 
-		auto cursor_pos_backup = ImGui::GetCursorScreenPos();
+		ImVec2 cursor_pos_backup = ImGui::GetCursorScreenPos();
 
 		ImVec2 graph_size;
 		graph_size.x = CalcItemWidth() + (style.FramePadding.x * 2);
@@ -1212,16 +1212,18 @@ namespace ImGui {
 		const ImU32 col_base = GetColorU32(ImGuiCol_PlotLines);
 		const ImU32 col_hovered = GetColorU32(ImGuiCol_PlotLinesHovered);
 
-		auto left_tangent = points[0];
-		auto right_tangent = points[2];
-		auto p = points[1];
-		auto transform = [inner_bb](const ImVec2& p) -> ImVec2
-		{
-			return ImVec2(inner_bb.Min.x * (1 - p.x) + inner_bb.Max.x * p.x,
-				inner_bb.Min.y * p.y + inner_bb.Max.y * (1 - p.y));
-		};
+		ImVec2 left_tangent = points[0];
+		ImVec2 right_tangent = points[2];
+		ImVec2 p = points[1];
+#define transform(p) ImVec2(inner_bb.Min.x * (1 - (p).x) + inner_bb.Max.x * (p).x, inner_bb.Min.y * (p).y + inner_bb.Max.y * (1 - (p).y))
 
-		auto pos = transform(p);
+//		auto transform = [inner_bb](const ImVec2& p) -> ImVec2
+//		{
+//			return ImVec2(inner_bb.Min.x * (1 - p.x) + inner_bb.Max.x * p.x,
+//				inner_bb.Min.y * p.y + inner_bb.Max.y * (1 - p.y));
+//		};
+
+		ImVec2 pos = transform(p);
 		if (editor.point_idx >= 0)
 		{
 			window->DrawList->AddBezierCurve(pos,
@@ -1231,6 +1233,7 @@ namespace ImGui {
 				col_base,
 				1.0f, 20);
 		}
+#undef transform
 		editor.prev_point = p;
 		editor.prev_tangent = right_tangent;
 

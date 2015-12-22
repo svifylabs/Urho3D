@@ -118,7 +118,10 @@ void HelloIMUI::HandleUpdate(StringHash eventType, VariantMap& eventData)
 		// normal text
 		ImGui::Text("Hallo world! ...");
 		// if font icons are loaded, use u8"" to place them.
-		ImGui::Text(u8"\uf016" " File"); // use string literal concatenation, ouputs a file icon and File as a string
+		
+		// ImGui::Text("\uF04B"); isn't correct it is 16-bit unicode whereas ImGui takes UTF-8.
+		// so use in c++11 use u8"\uf016" or
+		ImGui::Text("\xef\x80\x96" " File"); // use string literal concatenation, ouputs a file icon and File as a string
 		ImGui::Button("test", ImVec2(100.0f, 20.0f));
 	}
 	// if Begin was called, the corresponding End must be called too !!
@@ -203,7 +206,7 @@ void HelloIMUI::HandleUpdate(StringHash eventType, VariantMap& eventData)
 			{
 				ImGui::Text("Curve Editor (based on the code by https://github.com/nem0/LumixEngine):");
 				ImVec2 editor_size;
-				auto editor = ImGui::BeginCurveEditor("Curve Editor Child");
+				ImGui::CurveEditor editor = ImGui::BeginCurveEditor("Curve Editor Child");
 				if (editor.valid)
 				{
 					editor_size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetItemRectSize().y);

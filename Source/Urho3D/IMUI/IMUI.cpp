@@ -130,7 +130,7 @@ namespace Urho3D
 		touchId_(-1),
 		touch_(false),
 #if defined(ANDROID) || defined(IOS)
-		useScreenKeyboard_(true),
+		useScreenKeyboard_(true)
 #else
 		useScreenKeyboard_(false)
 #endif
