@@ -94,18 +94,18 @@ void HelloIMUI::Start()
 	imui->SetSettings(imuisettings);
 
 	/// Load xml imgui style.
-	ResourceCache* cache = GetSubsystem<ResourceCache>();
-	XMLFile* xmlfile = cache->GetResource<XMLFile>("Data/ImGuiStyle.xml");
-	imui->LoadStyleXML(xmlfile->GetRoot());
+//	ResourceCache* cache = GetSubsystem<ResourceCache>();
+//	XMLFile* xmlfile = cache->GetResource<XMLFile>("Data/ImGuiStyle.xml");
+//	imui->LoadStyleXML(xmlfile->GetRoot());
 }
 
 void HelloIMUI::Stop()
 {
 	/// save xml imgui style.
-	IMUI* imui = GetSubsystem<IMUI>();
-	ResourceCache* cache = GetSubsystem<ResourceCache>();
-	File styleSaveFile(context_, cache->GetResourceFileName("ImGuiStyle.xml"),FILE_WRITE);
-	imui->SaveStyleXML(styleSaveFile);
+//	IMUI* imui = GetSubsystem<IMUI>();
+//	ResourceCache* cache = GetSubsystem<ResourceCache>();
+//	File styleSaveFile(context_, cache->GetResourceFileName("ImGuiStyle.xml"),FILE_WRITE);
+//	imui->SaveStyleXML(styleSaveFile);
 }
 
 void HelloIMUI::HandleUpdate(StringHash eventType, VariantMap& eventData)
