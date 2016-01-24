@@ -23,6 +23,9 @@
 if (CMAKE_PROJECT_NAME STREQUAL Urho3D)
     # Set project name
     project (Urho3D-Clang-Tools)
+
+    # All Clang-tools must be natively built and output to bin/tool/clang subdir to differentiate them from the rest
+    set_output_directories (${CMAKE_BINARY_DIR}/bin/tool/clang RUNTIME PDB)
 else ()
     # Set CMake minimum version and CMake policy required by Urho3D-CMake-common module
     cmake_minimum_required (VERSION 2.8.6)
@@ -33,7 +36,7 @@ else ()
             cmake_policy (SET CMP0022 NEW)
         endif ()
         if (CMAKE_VERSION VERSION_GREATER 3.0.0 OR CMAKE_VERSION VERSION_EQUAL 3.0.0)
-            # Disallow use of the LOCATION target property - therefore we set to OLD as we still need it
+            # Disallow use of the LOCATION target property - so we set to OLD as we still need it
             cmake_policy (SET CMP0026 OLD)
             # MACOSX_RPATH is enabled by default
             cmake_policy (SET CMP0042 NEW)
@@ -66,9 +69,6 @@ if (MSVC)
 else ()
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -fno-rtti")
 endif ()
-
-# All Clang-tools must be natively built and output to bin/tool/clang subdir to differentiate them from the rest
-set_tool_output_directories (clang)
 
 # Define common dependency libs
 set (LIBS clangTooling clangFrontend clangDriver clangParse clangSerialization clangSema clangEdit clangAnalysis clangToolingCore

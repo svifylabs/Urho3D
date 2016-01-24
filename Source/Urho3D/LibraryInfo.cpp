@@ -49,6 +49,12 @@ const char* GetCompilerDefines()
 #elif defined(URHO3D_DATABASE_SQLITE)
     "#define URHO3D_DATABASE_SQLITE\n"
 #endif
+#ifdef URHO3D_LUAJIT
+    "#define URHO3D_LUAJIT\n"
+#endif
+#ifdef URHO3D_TESTING
+    "#define URHO3D_TESTING\n"
+#endif
     ;
 }
 

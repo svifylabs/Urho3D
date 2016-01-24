@@ -28,7 +28,7 @@ find_package (Urho3D REQUIRED)
 include_directories (${URHO3D_INCLUDE_DIRS})
 
 # Urho3DPlayer target is rather special, although it is here, it is not a tool because it is built into target platform binary as opposed to host platform
-if (NOT EMSCRIPTEN)
+if (NOT WEB)
     add_subdirectory (Urho3DPlayer)
 endif ()
 
@@ -48,9 +48,6 @@ if (CMAKE_CROSSCOMPILING AND URHO3D_PACKAGING)
     endif ()
     install (PROGRAMS ${CMAKE_BINARY_DIR}/bin/tool/PackageTool DESTINATION ${DEST_RUNTIME_DIR}/tool)
 endif ()
-
-# All tools must be natively built and output to bin/tool subdir to differentiate them from target platfrom binaries in the bin directory
-set_tool_output_directories ()
 
 if (URHO3D_TOOLS)
     # Urho3D tools

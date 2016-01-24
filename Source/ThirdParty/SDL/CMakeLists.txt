@@ -23,7 +23,7 @@
 # Define target name
 set (TARGET_NAME SDL)
 
-if (EMSCRIPTEN)
+if (WEB)
     # Emscripten has its own SDL2 port, so just create a custom target to:
     #  1) Fetch this SDL2 port from its GitHub repository
     #  2) Install SDL2 headers to the build tree in the post-build step (Note: current configuration uses our own SDL2 header files instead of the ones provided by Emscripten port for no special reason)
@@ -128,9 +128,9 @@ else ()
     include_directories (${ALSA_INCLUDE_DIRS})
 
     find_package (PulseAudio)
-    if (PA_FOUND)
-      include_directories (${PA_INCLUDE_DIRS})
-      get_filename_component (PA_SIMPLE ${PA_LIBRARIES} NAME)
+    if (PULSEAUDIO_FOUND)
+      include_directories (${PULSEAUDIO_INCLUDE_DIRS})
+      get_filename_component (PA_SIMPLE ${PULSEAUDIO_LIBRARIES} NAME)
       add_definitions (-DSDL_AUDIO_DRIVER_PULSEAUDIO=1 -DSDL_AUDIO_DRIVER_PULSEAUDIO_DYNAMIC="${PA_SIMPLE}")
       file (GLOB PULSEAUDIO_SOURCES src/audio/pulseaudio/*.c)
     endif ()
