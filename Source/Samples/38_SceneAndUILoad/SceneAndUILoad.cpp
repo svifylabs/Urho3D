@@ -35,6 +35,7 @@
 #include "SceneAndUILoad.h"
 
 #include <Urho3D/DebugNew.h>
+#include "../Core/Signal.h"
 
 URHO3D_DEFINE_APPLICATION_MAIN(SceneAndUILoad)
 
@@ -78,6 +79,26 @@ void SceneAndUILoad::CreateScene()
 
     // Set an initial position for the camera scene node above the plane
     cameraNode_->SetPosition(Vector3(0.0f, 2.0f, -10.0f));
+
+    // Set an initial position for the camera scene node above the plane
+    cameraNode_->SetPosition(Vector3(0.0f, 2.0f, -10.0f));
+    //     Signal<void(StringHash, VariantMap&)>::SlotType testdelegate;
+    //      testdelegate.bind(this, &SceneAndUILoad::ToggleLight1);
+
+    StringHash eventType;
+    VariantMap& eventData = GetEventDataMap();
+    //    testdelegate(eventType, eventData);
+
+    Signal<bool(int)> testSignal1;
+    testSignal1.Connect(&returnTrueAlways);
+    testSignal1.Connect(&ReturnFalse);
+    testSignal1.Connect(&returnTrueAlways);
+    testSignal1.Emit(1);
+
+    Signal<void(StringHash, VariantMap&)> testSignal;
+    testSignal.Connect(this, &SceneAndUILoad::ToggleLight1);
+    testSignal.Connect(this, &SceneAndUILoad::ToggleLight2);
+    testSignal.Emit(eventType, eventData);
 }
 
 void SceneAndUILoad::CreateUI()

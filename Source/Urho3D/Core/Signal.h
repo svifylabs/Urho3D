@@ -27,6 +27,8 @@
 ///
 /// Edited by svifylabs for urho3d
 /// original repo https://github.com/miguelmartin75/Wink-Signals
+/// https://github.com/GarageGames/Torque3D/blob/2044b2691e1a29fa65d1bdd163f0d834995433ce/Engine/source/core/util/tSignal.h
+/// https://github.com/realXtend/tundra-urho3d/blob/master/src/TundraCore/Signals/Signals.h
 /// uses http://www.codeproject.com/Articles/7150/Member-Function-Pointers-and-the-Fastest-Possible
 /// other implementaion which doesn't use dynamic allocated memory :
 ///	http://www.codeproject.com/Articles/11015/The-Impossibly-Fast-C-Delegates
@@ -42,7 +44,7 @@
 namespace Urho3D
 {
 
-    /// TODO: connect to other signal. prevent connecting to self.prevent infinite emit loop !? 
+    /// TODO: connect to other signal. prevent connecting to self. prevent infinite emit loop !? 
     /// TODO: disconnect on slot object destroyed. 
 
     // Declare FastDelegate as a class template.  It will be specialized
