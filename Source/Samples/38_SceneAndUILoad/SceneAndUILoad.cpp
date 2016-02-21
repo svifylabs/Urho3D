@@ -89,11 +89,6 @@ void SceneAndUILoad::CreateScene()
     VariantMap& eventData = GetEventDataMap();
     //    testdelegate(eventType, eventData);
 
-    Signal<bool(int)> testSignal1;
-    testSignal1.Connect(&returnTrueAlways);
-    testSignal1.Connect(&ReturnFalse);
-    testSignal1.Connect(&returnTrueAlways);
-    testSignal1.Emit(1);
 
     Signal<void(StringHash, VariantMap&)> testSignal;
     testSignal.Connect(this, &SceneAndUILoad::ToggleLight1);
