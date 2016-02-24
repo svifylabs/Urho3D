@@ -332,6 +332,19 @@ private:
     bool asyncLoading_;
     /// Threaded update flag.
     bool threadedUpdate_;
+    /// Time of the last tick that occurred
+    unsigned lastTick_;  
+    /// Last time value at which advanceTime was called
+    unsigned lastTime_;  
+    /// Last delta value for advanceTime
+    unsigned lastDelta_; 
+    /// Shift value to control how often Ticks occur
+    unsigned tickShift_; 
+    /// Number of milliseconds per tick, 32 in this case
+    unsigned tickMs_;   
+    /// Fraction of a second per tick
+    float tickSec_;   
+    unsigned tickMask_;
 };
 
 /// Register Scene library objects.

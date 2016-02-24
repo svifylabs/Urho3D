@@ -69,8 +69,18 @@ Scene::Scene(Context* context) :
     snapThreshold_(DEFAULT_SNAP_THRESHOLD),
     updateEnabled_(true),
     asyncLoading_(false),
-    threadedUpdate_(false)
+    threadedUpdate_(false),
+    lastTick_(0),
+    lastTime_(0),
+    lastDelta_(0),
+    tickShift_(5),
+    tickMs_(32),
+    tickSec_(0.032f),
+    tickMask_(31)
 {
+    tickMs_ = (1 << tickShift_);
+    tickSec_ = (float(tickMs_) / 1000.f);
+    tickMask_ = (tickMs_ - 1);
     // Assign an ID to self so that nodes can refer to this node as a parent
     SetID(GetFreeNodeID(REPLICATED));
     NodeAdded(this);
@@ -771,11 +781,39 @@ void Scene::Update(float timeStep)
 
     timeStep *= timeScale_;
 
+    unsigned targetTime = lastTime_ + unsigned(timeStep*1000.f);
+    unsigned targetTick = (targetTime + tickMask_) & ~tickMask_;
+    unsigned tickCount = (targetTick - lastTick_) >> tickShift_;
+
     using namespace SceneUpdate;
 
     VariantMap& eventData = GetEventDataMap();
     eventData[P_SCENE] = this;
     eventData[P_TIMESTEP] = timeStep;
+
+    if (tickCount)
+    {
+        URHO3D_PROFILE(UpdateFixed);
+        using namespace SceneFixedUpdate;
+        eventData[P_FIXEDTIMESTEP] = tickMs_;
+        for (; lastTick_ != targetTick; lastTick_ += tickMs_)
+        {
+            
+            SendEvent(E_SCENEFIXEDUPDATE, eventData);
+        }
+    }
+
+    lastDelta_ = (tickMs_ - (targetTime & tickMask_)) & tickMask_;
+    float dt = lastDelta_ / float(tickMs_);
+    eventData[P_INTERPOLATE] = lastDelta_ / float(tickMs_);
+
+    // TODO: remove
+//     {
+//         URHO3D_PROFILE(UpdateInterpolate);
+//         using namespace SceneInterpolateUpdate;
+//         eventData[P_DELTA] = dt;
+//         SendEvent(E_SCENEINTERPOLATEUPDATE, eventData);
+//     }
 
     // Update variable timestep logic
     SendEvent(E_SCENEUPDATE, eventData);
@@ -807,6 +845,9 @@ void Scene::Update(float timeStep)
     // primarily to update material animation effects, as it is available to shaders. It can be reset by calling
     // SetElapsedTime()
     elapsedTime_ += timeStep;
+
+    lastTime_ = targetTime;
+//    return tickCount != 0;
 }
 
 void Scene::BeginThreadedUpdate()

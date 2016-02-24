@@ -32,7 +32,24 @@ URHO3D_EVENT(E_SCENEUPDATE, SceneUpdate)
 {
     URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
+    URHO3D_PARAM(P_INTERPOLATE, Interpolate);      // float
 }
+
+/// Fixed timestep scene update.
+URHO3D_EVENT(E_SCENEFIXEDUPDATE, SceneFixedUpdate)
+{
+    URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
+    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
+    URHO3D_PARAM(P_FIXEDTIMESTEP, FixedTimeStep);  // float
+}
+
+// // Fixed timestep scene update.
+// URHO3D_EVENT(E_SCENEINTERPOLATEUPDATE, SceneInterpolateUpdate)
+// {
+//     URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
+//     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
+//     URHO3D_PARAM(P_DELTA, Delta);                  // float
+// }
 
 /// Scene subsystem update.
 URHO3D_EVENT(E_SCENESUBSYSTEMUPDATE, SceneSubsystemUpdate)
