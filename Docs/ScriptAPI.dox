@@ -164,7 +164,6 @@ namespace Urho3D
 ### KeyDown
 - %Key : int
 - %Scancode : int
-- %Raw : uint
 - %Buttons : int
 - %Qualifiers : int
 - %Repeat : bool
@@ -172,7 +171,6 @@ namespace Urho3D
 ### KeyUp
 - %Key : int
 - %Scancode : int
-- %Raw : uint
 - %Buttons : int
 - %Qualifiers : int
 
@@ -2774,6 +2772,7 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - float GetAutoFade(const String&) const
+- AnimationBlendMode GetBlendMode(const String&) const
 - float GetFadeTarget(const String&) const
 - float GetFadeTime(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
@@ -2814,6 +2813,7 @@ Methods:
 - void SetAttributeAnimationTime(const String&, float)
 - void SetAttributeAnimationWrapMode(const String&, WrapMode)
 - bool SetAutoFade(const String&, float)
+- bool SetBlendMode(const String&, AnimationBlendMode)
 - void SetInterceptNetworkUpdate(const String&, bool)
 - bool SetLayer(const String&, uint8)
 - bool SetLooped(const String&, bool)
@@ -2904,6 +2904,7 @@ Methods:
 Properties:
 
 - Animation@ animation // readonly
+- AnimationBlendMode blendMode
 - float[] boneWeights
 - bool enabled // readonly
 - uint8 layer
@@ -2994,7 +2995,11 @@ Methods:
 - bool HasMasterGain(const String&) const
 - bool HasSubscribedToEvent(Object@, const String&)
 - bool HasSubscribedToEvent(const String&)
+- bool IsSoundTypePaused(const String&)
+- void PauseSoundType(const String&)
 - bool Play()
+- void ResumeAll()
+- void ResumeSoundType(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - void SetMode(int, int, bool, bool = true)
 - void Stop()
@@ -11772,6 +11777,7 @@ Properties:
 - IntRect rectangle
 - int refs // readonly
 - Texture2D@ texture
+- float textureEdgeOffset
 - StringHash type // readonly
 - String typeName // readonly
 - uint useTimer // readonly
@@ -11799,7 +11805,7 @@ Properties:
 - uint memoryUse // readonly
 - String name
 - int refs // readonly
-- Texture2D@ texture // readonly
+- Texture2D@ texture
 - StringHash type // readonly
 - String typeName // readonly
 - uint useTimer // readonly
@@ -12136,6 +12142,7 @@ Properties:
 
 Methods:
 
+- Technique@ Clone(const String& = String ( )) const
 - Pass@ CreatePass(const String&)
 - Pass@ GetPass(const String&)
 - Pass@ GetSupportedPass(const String&)
@@ -12766,6 +12773,7 @@ Properties:
 Methods:
 
 - void ClearDataLost()
+- Image@ GetImage(CubeMapFace) const
 - bool HasSubscribedToEvent(Object@, const String&)
 - bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
@@ -13505,6 +13513,7 @@ Methods:
 - void FromString(VariantType, const String&)
 - void FromString(const String&, const String&)
 - bool GetBool() const
+- VectorBuffer GetBuffer() const
 - double GetDouble() const
 - float GetFloat() const
 - int GetInt() const
@@ -13528,7 +13537,6 @@ Methods:
 - const Vector2& GetVector2() const
 - const Vector3& GetVector3() const
 - const Vector4& GetVector4() const
-- const VectorBuffer GetBuffer() const
 
 Properties:
 
@@ -14400,6 +14408,12 @@ Properties:
 
 \section ScriptAPI_Enums Enumerations
 
+### AnimationBlendMode
+
+- ABM_LERP
+- ABM_ADDITIVE
+
+
 ### BlendMode
 
 - BLEND_REPLACE
@@ -14955,6 +14969,7 @@ Properties:
 - uint GetFloat16Format()
 - uint GetFloat32Format()
 - uint GetFormat(const String&)
+- Variant GetGlobalVar(const String&)
 - String GetInternalPath(const String&)
 - uint GetLinearDepthFormat()
 - uint GetLuminanceAlphaFormat()
@@ -15016,6 +15031,7 @@ Properties:
 - String ReplaceExtension(const String&, const String&)
 - uint SDBMHash(uint, uint8)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
+- void SetGlobalVar(const String&, Variant&)
 - void SetMiniDumpDir(const String&)
 - void SetRandomSeed(uint)
 - float Sign(float)
@@ -15045,6 +15061,7 @@ Properties:
 - DebugRenderer@ debugRenderer
 - Engine@ engine
 - FileSystem@ fileSystem
+- VariantMap globalVars
 - Graphics@ graphics
 - Input@ input
 - Localization@ localization
@@ -15279,6 +15296,7 @@ Properties:
 - uint M_MIN_UNSIGNED
 - float M_PI
 - float M_RADTODEG
+- uint NPOS
 - float PIXEL_SIZE
 - int QUALITY_HIGH
 - int QUALITY_LOW
@@ -15549,7 +15567,6 @@ Properties:
 - uint VO_NONE
 - Color WHITE
 - Color YELLOW
-- VariantMap globalVars
 */
 
 }

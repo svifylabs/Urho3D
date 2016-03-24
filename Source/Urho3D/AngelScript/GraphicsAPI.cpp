@@ -210,6 +210,26 @@ static bool TextureCubeSetData(CubeMapFace face, Image* image, bool useAlpha, Te
     return ptr->SetData(face, SharedPtr<Image>(image), useAlpha);
 }
 
+static Image* TextureCubeGetImage(CubeMapFace face, TextureCube* texCube)
+{
+    Image* rawImage = new Image(texCube->GetContext());
+    const unsigned texSize = texCube->GetDataSize(texCube->GetWidth(), texCube->GetHeight());
+    const unsigned format = texCube->GetFormat();
+
+    if (format == Graphics::GetRGBAFormat())
+        rawImage->SetSize(texCube->GetWidth(), texCube->GetHeight(), 4);
+    else if (format == Graphics::GetRGBFormat())
+        rawImage->SetSize(texCube->GetWidth(), texCube->GetHeight(), 3);
+    else
+    {
+        delete rawImage;
+        return 0;
+    }
+
+    texCube->GetData(face, 0, rawImage->GetData());
+    return rawImage;
+}
+
 static void ConstructRenderTargetInfo(RenderTargetInfo* ptr)
 {
     new(ptr) RenderTargetInfo();
@@ -514,6 +534,7 @@ static void RegisterTextures(asIScriptEngine* engine)
     RegisterTexture<TextureCube>(engine, "TextureCube");
     engine->RegisterObjectMethod("TextureCube", "bool SetSize(int, uint, TextureUsage usage = TEXTURE_STATIC)", asMETHOD(TextureCube, SetSize), asCALL_THISCALL);
     engine->RegisterObjectMethod("TextureCube", "bool SetData(CubeMapFace, Image@+, bool useAlpha = false)", asFUNCTION(TextureCubeSetData), asCALL_CDECL_OBJLAST);
+    engine->RegisterObjectMethod("TextureCube", "Image@+ GetImage(CubeMapFace) const", asFUNCTION(TextureCubeGetImage), asCALL_CDECL_OBJLAST); 
     engine->RegisterObjectMethod("TextureCube", "RenderSurface@+ get_renderSurfaces(CubeMapFace) const", asMETHOD(TextureCube, GetRenderSurface), asCALL_THISCALL);
 
     engine->RegisterGlobalFunction("uint GetAlphaFormat()", asFUNCTION(Graphics::GetAlphaFormat), asCALL_CDECL);
@@ -534,6 +555,15 @@ static void RegisterTextures(asIScriptEngine* engine)
     engine->RegisterGlobalFunction("uint GetReadableDepthFormat()", asFUNCTION(Graphics::GetReadableDepthFormat), asCALL_CDECL);
     engine->RegisterGlobalFunction("uint GetFormat(const String&in)", asFUNCTIONPR(Graphics::GetFormat, (const String&), unsigned), asCALL_CDECL);
     engine->RegisterGlobalFunction("uint GetMaxBones()", asFUNCTION(Graphics::GetMaxBones), asCALL_CDECL);
+}
+
+static Technique* TechniqueClone(const String& cloneName, Technique* ptr)
+{
+    SharedPtr<Technique> clone = ptr->Clone(cloneName);
+    // The shared pointer will go out of scope, so have to increment the reference count
+    // (here an auto handle can not be used)
+    clone->AddRef();
+    return clone.Get();
 }
 
 static Material* MaterialClone(const String& cloneName, Material* ptr)
@@ -813,6 +843,7 @@ static void RegisterMaterial(asIScriptEngine* engine)
     RegisterResource<Technique>(engine, "Technique");
     engine->RegisterObjectMethod("Technique", "Pass@+ CreatePass(const String&in)", asMETHOD(Technique, CreatePass), asCALL_THISCALL);
     engine->RegisterObjectMethod("Technique", "void RemovePass(const String&in)", asMETHOD(Technique, RemovePass), asCALL_THISCALL);
+    engine->RegisterObjectMethod("Technique", "Technique@ Clone(const String&in cloneName = String()) const", asFUNCTION(TechniqueClone), asCALL_CDECL_OBJLAST);
     engine->RegisterObjectMethod("Technique", "bool HasPass(const String&in) const", asMETHODPR(Technique, HasPass, (const String&) const, bool), asCALL_THISCALL);
     engine->RegisterObjectMethod("Technique", "Pass@+ GetPass(const String&in)", asMETHODPR(Technique, GetPass, (const String&) const, Pass*), asCALL_THISCALL);
     engine->RegisterObjectMethod("Technique", "Pass@+ GetSupportedPass(const String&in)", asMETHODPR(Technique, GetSupportedPass, (const String&) const, Pass*), asCALL_THISCALL);
@@ -1221,6 +1252,10 @@ static void RegisterAnimatedModel(asIScriptEngine* engine)
     RegisterRefCounted<AnimationState>(engine, "AnimationState");
     RegisterStaticModel<AnimatedModel>(engine, "AnimatedModel", false);
 
+    engine->RegisterEnum("AnimationBlendMode");
+    engine->RegisterEnumValue("AnimationBlendMode", "ABM_LERP", ABM_LERP);
+    engine->RegisterEnumValue("AnimationBlendMode", "ABM_ADDITIVE", ABM_ADDITIVE);
+
     engine->RegisterObjectBehaviour("AnimationState", asBEHAVE_FACTORY, "AnimationState@+ f(Node@+, Animation@+)", asFUNCTION(ConstructAnimationState), asCALL_CDECL);
     engine->RegisterObjectMethod("AnimationState", "void AddWeight(float)", asMETHOD(AnimationState, AddWeight), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationState", "void AddTime(float)", asMETHOD(AnimationState, AddTime), asCALL_THISCALL);
@@ -1238,6 +1273,8 @@ static void RegisterAnimatedModel(asIScriptEngine* engine)
     engine->RegisterObjectMethod("AnimationState", "bool get_looped() const", asMETHOD(AnimationState, IsLooped), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationState", "void set_weight(float)", asMETHOD(AnimationState, SetWeight), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationState", "float get_weight() const", asMETHOD(AnimationState, GetWeight), asCALL_THISCALL);
+    engine->RegisterObjectMethod("AnimationState", "void set_blendMode(AnimationBlendMode)", asMETHOD(AnimationState, SetBlendMode), asCALL_THISCALL);
+    engine->RegisterObjectMethod("AnimationState", "AnimationBlendMode get_blendMode() const", asMETHOD(AnimationState, GetBlendMode), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationState", "void set_time(float)", asMETHOD(AnimationState, SetTime), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationState", "float get_time() const", asMETHOD(AnimationState, GetTime), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationState", "void set_layer(uint8)", asMETHOD(AnimationState, SetLayer), asCALL_THISCALL);
@@ -1290,6 +1327,7 @@ static void RegisterAnimationController(asIScriptEngine* engine)
     engine->RegisterObjectMethod("AnimationController", "bool SetTime(const String&in, float)", asMETHOD(AnimationController, SetTime), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationController", "bool SetWeight(const String&in, float)", asMETHOD(AnimationController, SetWeight), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationController", "bool SetLooped(const String&in, bool)", asMETHOD(AnimationController, SetLooped), asCALL_THISCALL);
+    engine->RegisterObjectMethod("AnimationController", "bool SetBlendMode(const String&in, AnimationBlendMode)", asMETHOD(AnimationController, SetBlendMode), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationController", "bool SetSpeed(const String&in, float)", asMETHOD(AnimationController, SetSpeed), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationController", "bool SetAutoFade(const String&in, float)", asMETHOD(AnimationController, SetAutoFade), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationController", "bool SetRemoveOnCompletion(const String&in, bool)", asMETHOD(AnimationController, SetRemoveOnCompletion), asCALL_THISCALL);
@@ -1302,6 +1340,7 @@ static void RegisterAnimationController(asIScriptEngine* engine)
     engine->RegisterObjectMethod("AnimationController", "float GetTime(const String&in) const", asMETHOD(AnimationController, GetTime), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationController", "float GetWeight(const String&in) const", asMETHOD(AnimationController, GetWeight), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationController", "bool GetLooped(const String&in) const", asMETHOD(AnimationController, IsLooped), asCALL_THISCALL);
+    engine->RegisterObjectMethod("AnimationController", "AnimationBlendMode GetBlendMode(const String&in) const", asMETHOD(AnimationController, GetBlendMode), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationController", "float GetLength(const String&in) const", asMETHOD(AnimationController, GetLength), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationController", "float GetSpeed(const String&in) const", asMETHOD(AnimationController, GetSpeed), asCALL_THISCALL);
     engine->RegisterObjectMethod("AnimationController", "float GetFadeTarget(const String&in) const", asMETHOD(AnimationController, GetFadeTarget), asCALL_THISCALL);
