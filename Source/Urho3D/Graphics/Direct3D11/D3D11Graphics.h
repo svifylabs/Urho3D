@@ -49,6 +49,7 @@ class ShaderProgram;
 class ShaderVariation;
 class Texture;
 class Texture2D;
+class Texture2DArray;
 class TextureCube;
 class Vector3;
 class Vector4;
@@ -132,11 +133,9 @@ public:
     /// Set vertex buffer.
     void SetVertexBuffer(VertexBuffer* buffer);
     /// Set multiple vertex buffers.
-    bool SetVertexBuffers
-        (const PODVector<VertexBuffer*>& buffers, const PODVector<unsigned>& elementMasks, unsigned instanceOffset = 0);
+    bool SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigned instanceOffset = 0);
     /// Set multiple vertex buffers.
-    bool SetVertexBuffers
-        (const Vector<SharedPtr<VertexBuffer> >& buffers, const PODVector<unsigned>& elementMasks, unsigned instanceOffset = 0);
+    bool SetVertexBuffers(const Vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
     /// Set index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
     /// Set shaders.
@@ -575,8 +574,6 @@ private:
     unsigned hiresShadowMapFormat_;
     /// Vertex buffers in use.
     VertexBuffer* vertexBuffers_[MAX_VERTEX_STREAMS];
-    /// Element masks by vertex buffer.
-    unsigned elementMasks_[MAX_VERTEX_STREAMS];
     /// Index buffer in use.
     IndexBuffer* indexBuffer_;
     /// Current vertex declaration hash.

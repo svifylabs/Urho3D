@@ -256,6 +256,9 @@ inline float HalfToFloat(unsigned short value)
     return out;
 }
 
+/// Calculate both sine and cosine, with angle in degrees.
+URHO3D_API void SinCos(float angle, float& sin, float& cos);
+
 }
 
 #ifdef _MSC_VER

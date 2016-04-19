@@ -251,6 +251,7 @@ namespace Urho3D
 
 ### MouseModeChanged
 - %Mode : MouseMode
+- %MouseLocked : bool
 
 ### ExitRequested
 
@@ -2436,6 +2437,7 @@ namespace Urho3D
 <a href="#Class_Text3D"><b>Text3D</b></a>
 <a href="#Class_Texture"><b>Texture</b></a>
 <a href="#Class_Texture2D"><b>Texture2D</b></a>
+<a href="#Class_Texture2DArray"><b>Texture2DArray</b></a>
 <a href="#Class_Texture3D"><b>Texture3D</b></a>
 <a href="#Class_TextureCube"><b>TextureCube</b></a>
 <a href="#Class_TextureFrame"><b>TextureFrame</b></a>
@@ -2459,6 +2461,7 @@ namespace Urho3D
 <a href="#Class_Vector4"><b>Vector4</b></a>
 <a href="#Class_VectorBuffer"><b>VectorBuffer</b></a>
 <a href="#Class_VertexBuffer"><b>VertexBuffer</b></a>
+<a href="#Class_VertexElement"><b>VertexElement</b></a>
 <a href="#Class_View3D"><b>View3D</b></a>
 <a href="#Class_Viewport"><b>Viewport</b></a>
 <a href="#Class_WeakHandle"><b>WeakHandle</b></a>
@@ -6926,7 +6929,7 @@ Methods:
 - bool SetDrawRange(PrimitiveType, uint, uint, bool = true)
 - bool SetDrawRange(PrimitiveType, uint, uint, uint, uint, bool = true)
 - void SetIndexBuffer(IndexBuffer@)
-- bool SetVertexBuffer(uint, VertexBuffer@, uint = MASK_DEFAULT)
+- bool SetVertexBuffer(uint, VertexBuffer@)
 
 Properties:
 
@@ -6943,7 +6946,6 @@ Properties:
 - String typeName // readonly
 - VertexBuffer@[] vertexBuffers // readonly
 - uint vertexCount // readonly
-- uint[] vertexElementMasks // readonly
 - uint vertexStart // readonly
 - int weakRefs // readonly
 
@@ -7168,12 +7170,16 @@ Methods:
 - void RemoveAllGestures()
 - bool RemoveGesture(uint)
 - bool RemoveScreenJoystick(int)
+- void ResetMouseGrabbed()
+- void ResetMouseMode()
 - void ResetMouseVisible()
 - bool SaveGesture(File@, uint)
 - bool SaveGesture(VectorBuffer&, uint)
 - bool SaveGestures(File@)
 - bool SaveGestures(VectorBuffer&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
+- void SetMouseGrabbed(bool, bool = false)
+- void SetMouseMode(MouseMode, bool = false)
 - void SetMouseVisible(bool, bool = false)
 
 Properties:
@@ -7182,12 +7188,14 @@ Properties:
 - bool focus // readonly
 - JoystickState@[] joysticks // readonly
 - JoystickState@[] joysticksByIndex // readonly
+- JoystickState@[] joysticksByName // readonly
 - bool[] keyDown // readonly
 - bool[] keyPress // readonly
 - bool minimized // readonly
 - bool[] mouseButtonDown // readonly
 - bool[] mouseButtonPress // readonly
 - bool mouseGrabbed
+- bool mouseLocked // readonly
 - MouseMode mouseMode
 - IntVector2 mouseMove // readonly
 - int mouseMoveWheel // readonly
@@ -9830,6 +9838,7 @@ Properties:
 - Material@ defaultLightSpot // readonly
 - Material@ defaultMaterial // readonly
 - RenderPath@ defaultRenderPath
+- Technique@ defaultTechnique
 - Zone@ defaultZone // readonly
 - bool drawShadows
 - bool dynamicInstancing
@@ -12721,6 +12730,53 @@ Properties:
 - int weakRefs // readonly
 - int width // readonly
 
+<a name="Class_Texture2DArray"></a>
+
+### Texture2DArray
+
+Methods:
+
+- void ClearDataLost()
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool Load(File@)
+- bool Load(VectorBuffer&)
+- bool Save(File@) const
+- bool Save(VectorBuffer&) const
+- void SendEvent(const String&, VariantMap& = VariantMap ( ))
+- bool SetData(uint, Image@, bool = false)
+- void SetNumLevels(uint)
+- bool SetSize(uint, int, int, uint, TextureUsage = TEXTURE_STATIC)
+
+Properties:
+
+- TextureAddressMode[] addressMode
+- Texture@ backupTexture
+- Color borderColor
+- String category // readonly
+- uint components // readonly
+- bool compressed // readonly
+- bool dataLost // readonly
+- TextureFilterMode filterMode
+- uint format // readonly
+- int height // readonly
+- uint layers
+- int[] levelHeight // readonly
+- int[] levelWidth // readonly
+- uint levels // readonly
+- uint memoryUse // readonly
+- int[] mipsToSkip
+- String name
+- int refs // readonly
+- RenderSurface@ renderSurface // readonly
+- bool sRGB
+- StringHash type // readonly
+- String typeName // readonly
+- TextureUsage usage // readonly
+- uint useTimer // readonly
+- int weakRefs // readonly
+- int width // readonly
+
 <a name="Class_Texture3D"></a>
 
 ### Texture3D
@@ -13726,12 +13782,17 @@ Properties:
 
 Methods:
 
-- VectorBuffer GetData()
+- VectorBuffer GetData() const
+- uint GetElementOffset(VertexElementSemantic, uint8 = 0) const
+- uint GetElementOffset(VertexElementType, VertexElementSemantic, uint8 = 0) const
+- bool HasElement(VertexElementSemantic, uint8 = 0) const
+- bool HasElement(VertexElementType, VertexElementSemantic, uint8 = 0) const
 - bool HasSubscribedToEvent(Object@, const String&)
 - bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - bool SetData(VectorBuffer&)
 - bool SetDataRange(VectorBuffer&, uint, uint, bool = false)
+- void SetSize(uint, VertexElement[]@, bool = false)
 - void SetSize(uint, uint, bool = false)
 
 Properties:
@@ -13739,6 +13800,7 @@ Properties:
 - String category // readonly
 - bool dynamic // readonly
 - uint elementMask // readonly
+- VertexElement[]@ elements // readonly
 - int refs // readonly
 - bool shadowed
 - StringHash type // readonly
@@ -13746,6 +13808,18 @@ Properties:
 - uint vertexCount // readonly
 - uint vertexSize // readonly
 - int weakRefs // readonly
+
+<a name="Class_VertexElement"></a>
+
+### VertexElement
+
+Properties:
+
+- uint8 index
+- uint offset
+- bool perInstance
+- VertexElementSemantic semantic
+- VertexElementType type
 
 <a name="Class_View3D"></a>
 
@@ -14925,6 +14999,32 @@ Properties:
 - VAR_STRINGVECTOR
 
 
+### VertexElementSemantic
+
+- SEM_POSITION
+- SEM_NORMAL
+- SEM_BINORMAL
+- SEM_TANGENT
+- SEM_TEXCOORD
+- SEM_COLOR
+- SEM_BLENDWEIGHTS
+- SEM_BLENDINDICES
+- SEM_OBJECTINDEX
+- MAX_VERTEX_ELEMENT_SEMANTICS
+
+
+### VertexElementType
+
+- TYPE_INT
+- TYPE_FLOAT
+- TYPE_VECTOR2
+- TYPE_VECTOR3
+- TYPE_VECTOR4
+- TYPE_UBYTE4
+- TYPE_UBYTE4_NORM
+- MAX_VERTEX_ELEMENT_TYPES
+
+
 ### VerticalAlignment
 
 - VA_TOP
@@ -15269,7 +15369,6 @@ Properties:
 - uint MASK_COLOR
 - uint MASK_CUBETEXCOORD1
 - uint MASK_CUBETEXCOORD2
-- uint MASK_DEFAULT
 - uint MASK_INSTANCEMATRIX1
 - uint MASK_INSTANCEMATRIX2
 - uint MASK_INSTANCEMATRIX3
