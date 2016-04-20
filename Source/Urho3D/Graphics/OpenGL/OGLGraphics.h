@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2015 the Urho3D project.
+// Copyright (c) 2008-2016 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,6 +47,7 @@ class ShaderProgram;
 class ShaderVariation;
 class Texture;
 class Texture2D;
+class Texture2DArray;
 class TextureCube;
 class Vector3;
 class Vector4;
@@ -132,10 +133,10 @@ public:
     void SetVertexBuffer(VertexBuffer* buffer);
     /// Set multiple vertex buffers.
     bool SetVertexBuffers
-        (const PODVector<VertexBuffer*>& buffers, const PODVector<unsigned>& elementMasks, unsigned instanceOffset = 0);
+        (const PODVector<VertexBuffer*>& buffers, unsigned instanceOffset = 0);
     /// Set multiple vertex buffers.
     bool SetVertexBuffers
-        (const Vector<SharedPtr<VertexBuffer> >& buffers, const PODVector<unsigned>& elementMasks, unsigned instanceOffset = 0);
+        (const Vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
     /// Set index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
     /// Set shaders.
@@ -248,10 +249,10 @@ public:
     /// Return window position.
     IntVector2 GetWindowPosition() const;
 
-    /// Return window width.
+    /// Return window width in pixels.
     int GetWidth() const { return width_; }
 
-    /// Return window height.
+    /// Return window height in pixels.
     int GetHeight() const { return height_; }
 
     /// Return multisample mode (1 = no multisampling.)
@@ -326,7 +327,7 @@ public:
     /// Return whether sRGB conversion on rendertarget writing is supported.
     bool GetSRGBWriteSupport() const { return sRGBWriteSupport_; }
 
-    /// Return supported fullscreen resolutions. Will be empty if listing the resolutions is not supported on the platform (e.g. HTML5.)
+    /// Return supported fullscreen resolutions. Will be empty if listing the resolutions is not supported on the platform (e.g. Web).
     PODVector<IntVector2> GetResolutions() const;
     /// Return supported multisampling levels.
     PODVector<int> GetMultiSampleLevels() const;
@@ -544,6 +545,8 @@ private:
     void BindStencilAttachment(unsigned object, bool isRenderBuffer);
     /// Check FBO completeness using either extension or core functionality.
     bool CheckFramebuffer();
+    /// Set vertex attrib divisor. No-op if unsupported.
+    void SetVertexAttribDivisor(unsigned location, unsigned divisor);
 
     /// Mutex for accessing the GPU objects vector from several threads.
     Mutex gpuObjectMutex_;
@@ -555,9 +558,9 @@ private:
     Image* windowIcon_;
     /// External window, null if not in use (default.)
     void* externalWindow_;
-    /// Window width.
+    /// Window width in pixels.
     int width_;
-    /// Window height.
+    /// Window height in pixels.
     int height_;
     /// Window position.
     IntVector2 position_;

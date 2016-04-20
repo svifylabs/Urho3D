@@ -164,7 +164,6 @@ namespace Urho3D
 ### KeyDown
 - %Key : int
 - %Scancode : int
-- %Raw : uint
 - %Buttons : int
 - %Qualifiers : int
 - %Repeat : bool
@@ -172,7 +171,6 @@ namespace Urho3D
 ### KeyUp
 - %Key : int
 - %Scancode : int
-- %Raw : uint
 - %Buttons : int
 - %Qualifiers : int
 
@@ -253,6 +251,7 @@ namespace Urho3D
 
 ### MouseModeChanged
 - %Mode : MouseMode
+- %MouseLocked : bool
 
 ### ExitRequested
 
@@ -381,14 +380,6 @@ namespace Urho3D
 - %Connection : Connection pointer
 
 ## %Physics2D events
-
-### PhysicsPreStep2D
-- %World : PhysicsWorld2D pointer
-- %TimeStep : float
-
-### PhysicsPostStep2D
-- %World : PhysicsWorld2D pointer
-- %TimeStep : float
 
 ### PhysicsBeginContact2D
 - %World : PhysicsWorld2D pointer
@@ -560,6 +551,16 @@ namespace Urho3D
 ### NodeEnabledChanged
 - %Scene : Scene pointer
 - %Node : Node pointer
+
+### NodeTagAdded
+- %Scene : Scene pointer
+- %Node : Node pointer
+- %Tag : String tag
+
+### NodeTagRemoved
+- %Scene : Scene pointer
+- %Node : Node pointer
+- %Tag : String tag
 
 ### ComponentEnabledChanged
 - %Scene : Scene pointer
@@ -894,6 +895,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Texture : ResourceRef
 - %Image %Rect : IntRect
 - %Border : IntRect
@@ -935,6 +937,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Texture : ResourceRef
 - %Image %Rect : IntRect
 - %Border : IntRect
@@ -1000,6 +1003,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Texture : ResourceRef
 - %Image %Rect : IntRect
 - %Border : IntRect
@@ -1243,6 +1247,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Texture : ResourceRef
 - %Image %Rect : IntRect
 - %Border : IntRect
@@ -1315,6 +1320,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Texture : ResourceRef
 - %Image %Rect : IntRect
 - %Border : IntRect
@@ -1419,6 +1425,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Texture : ResourceRef
 - %Image %Rect : IntRect
 - %Border : IntRect
@@ -1466,6 +1473,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %View %Position : IntVector2
 - %Scroll %Step : float
 - %Page %Step : float
@@ -1519,6 +1527,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Texture : ResourceRef
 - %Image %Rect : IntRect
 - %Border : IntRect
@@ -1569,6 +1578,7 @@ namespace Urho3D
 ### Node
 - %Is %Enabled : bool
 - %Name : String
+- %Tags : StringVector
 - %Position : Vector3
 - %Rotation : Quaternion
 - %Scale : Vector3
@@ -1594,7 +1604,6 @@ namespace Urho3D
 ### ParticleEmitter
 - %Is %Enabled : bool
 - %Effect : ResourceRef
-- %Face %Camera %Mode : int
 - %Can %Be %Occluded : bool
 - %Cast %Shadows : bool
 - %Draw %Distance : float
@@ -1731,6 +1740,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Orientation : int
 - %Range : float
 - %Value : float
@@ -1774,6 +1784,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %View %Position : IntVector2
 - %Scroll %Step : float
 - %Page %Step : float
@@ -1833,6 +1844,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Texture : ResourceRef
 - %Image %Rect : IntRect
 - %Border : IntRect
@@ -2005,6 +2017,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Font : ResourceRef
 - %Font %Size : int
 - %Text : String
@@ -2078,6 +2091,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Delay : float
 
 ### UIElement
@@ -2113,6 +2127,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 
 ### View3D
 - %Name : String
@@ -2147,6 +2162,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Texture : ResourceRef
 - %Image %Rect : IntRect
 - %Border : IntRect
@@ -2197,6 +2213,7 @@ namespace Urho3D
 - %Indent : int
 - %Indent %Spacing : int
 - %Variables : VariantMap
+- %Tags : StringVector
 - %Texture : ResourceRef
 - %Image %Rect : IntRect
 - %Border : IntRect
@@ -2337,6 +2354,7 @@ namespace Urho3D
 <a href="#Class_Localization"><b>Localization</b></a>
 <a href="#Class_Log"><b>Log</b></a>
 <a href="#Class_Material"><b>Material</b></a>
+<a href="#Class_Matrix2"><b>Matrix2</b></a>
 <a href="#Class_Matrix3"><b>Matrix3</b></a>
 <a href="#Class_Matrix3x4"><b>Matrix3x4</b></a>
 <a href="#Class_Matrix4"><b>Matrix4</b></a>
@@ -2419,6 +2437,7 @@ namespace Urho3D
 <a href="#Class_Text3D"><b>Text3D</b></a>
 <a href="#Class_Texture"><b>Texture</b></a>
 <a href="#Class_Texture2D"><b>Texture2D</b></a>
+<a href="#Class_Texture2DArray"><b>Texture2DArray</b></a>
 <a href="#Class_Texture3D"><b>Texture3D</b></a>
 <a href="#Class_TextureCube"><b>TextureCube</b></a>
 <a href="#Class_TextureFrame"><b>TextureFrame</b></a>
@@ -2442,6 +2461,7 @@ namespace Urho3D
 <a href="#Class_Vector4"><b>Vector4</b></a>
 <a href="#Class_VectorBuffer"><b>VectorBuffer</b></a>
 <a href="#Class_VertexBuffer"><b>VertexBuffer</b></a>
+<a href="#Class_VertexElement"><b>VertexElement</b></a>
 <a href="#Class_View3D"><b>View3D</b></a>
 <a href="#Class_Viewport"><b>Viewport</b></a>
 <a href="#Class_WeakHandle"><b>WeakHandle</b></a>
@@ -2467,6 +2487,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -2524,6 +2546,8 @@ Methods:
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
 - float GetMorphWeight(uint) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -2554,6 +2578,7 @@ Methods:
 - void SetAttributeAnimationWrapMode(const String&, WrapMode)
 - void SetInterceptNetworkUpdate(const String&, bool)
 - void SetMorphWeight(uint, float)
+- void UpdateBoneBoundingBox()
 
 Properties:
 
@@ -2616,6 +2641,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -2700,6 +2727,8 @@ Methods:
 - void AddTrigger(const AnimationTriggerPoint&)
 - void AddTrigger(float, bool, const Variant&)
 - AnimationTrack@ CreateTrack(const String&)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool RemoveAllTracks()
@@ -2746,6 +2775,7 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - float GetAutoFade(const String&) const
+- AnimationBlendMode GetBlendMode(const String&) const
 - float GetFadeTarget(const String&) const
 - float GetFadeTime(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
@@ -2756,6 +2786,8 @@ Methods:
 - float GetSpeed(const String&) const
 - float GetTime(const String&) const
 - float GetWeight(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsAtEnd(const String&) const
 - bool IsFadingIn(const String&) const
 - bool IsFadingOut(const String&) const
@@ -2784,6 +2816,7 @@ Methods:
 - void SetAttributeAnimationTime(const String&, float)
 - void SetAttributeAnimationWrapMode(const String&, WrapMode)
 - bool SetAutoFade(const String&, float)
+- bool SetBlendMode(const String&, AnimationBlendMode)
 - void SetInterceptNetworkUpdate(const String&, bool)
 - bool SetLayer(const String&, uint8)
 - bool SetLooped(const String&, bool)
@@ -2834,6 +2867,8 @@ Properties:
 Methods:
 
 - String GetAnimation(uint) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -2872,6 +2907,7 @@ Methods:
 Properties:
 
 - Animation@ animation // readonly
+- AnimationBlendMode blendMode
 - float[] boneWeights
 - bool enabled // readonly
 - uint8 layer
@@ -2960,7 +2996,13 @@ Properties:
 Methods:
 
 - bool HasMasterGain(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool IsSoundTypePaused(const String&)
+- void PauseSoundType(const String&)
 - bool Play()
+- void ResumeAll()
+- void ResumeSoundType(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - void SetMode(int, int, bool, bool = true)
 - void Stop()
@@ -2997,6 +3039,7 @@ Properties:
 Properties:
 
 - Color color
+- Vector3 direction
 - bool enabled
 - Vector3 position
 - float rotation
@@ -3019,6 +3062,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -3107,6 +3152,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -3123,9 +3170,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -3142,11 +3193,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -3253,6 +3306,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - Texture@ texture
 - bool tiled
@@ -3315,6 +3369,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -3331,9 +3387,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -3350,11 +3410,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -3469,6 +3531,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - Texture@ texture
 - bool tiled
@@ -3502,6 +3565,8 @@ Methods:
 - bool GetInterceptNetworkUpdate(const String&) const
 - Ray GetScreenRay(float, float) const
 - Frustum GetSplitFrustum(float, float) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -3590,6 +3655,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -3606,9 +3673,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -3625,11 +3696,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -3739,6 +3812,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - Texture@ texture
 - bool tiled
@@ -3768,6 +3842,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -3841,6 +3917,8 @@ Methods:
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
 - Vector2[]@ GetVertices() const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -3913,6 +3991,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -3983,6 +4063,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4054,6 +4136,8 @@ Methods:
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
 - Vector2[]@ GetVertices() const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4125,6 +4209,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4202,6 +4288,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4318,6 +4406,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4367,6 +4457,8 @@ Properties:
 Methods:
 
 - void Disconnect(int = 0)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - void SendMessage(int, bool, bool, const VectorBuffer&, uint = 0)
 - void SendPackageToClient(PackageFile@)
@@ -4411,6 +4503,8 @@ Properties:
 Methods:
 
 - void CopySelectedRows() const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - void Toggle()
 - void UpdateElements()
@@ -4451,6 +4545,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4523,6 +4619,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4583,6 +4681,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4647,6 +4747,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4710,6 +4812,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4773,6 +4877,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4838,6 +4944,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4902,6 +5010,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -4970,6 +5080,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -5035,6 +5147,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -5102,6 +5216,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -5165,6 +5281,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -5228,6 +5346,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -5314,6 +5434,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -5402,6 +5524,8 @@ Methods:
 - bool GetInterceptNetworkUpdate(const String&) const
 - Vector3 GetRandomPoint(int)
 - Vector3 GetRandomPointInCircle(const Vector3&, float, int)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -5483,6 +5607,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -5501,9 +5627,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -5520,11 +5650,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -5634,6 +5766,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - Texture@ texture
 - bool tiled
@@ -5674,6 +5807,8 @@ Methods:
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
 - CustomGeometryVertex@ GetVertex(uint, uint)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -5757,6 +5892,8 @@ Methods:
 
 - DbConnection@ Connect(const String&)
 - void Disconnect(DbConnection@)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 
 Properties:
@@ -5776,6 +5913,8 @@ Properties:
 Methods:
 
 - DbResult Execute(const String&, bool = false)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 
 Properties:
@@ -5807,6 +5946,8 @@ Properties:
 Methods:
 
 - void ClearAppStats()
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void ResetAppStats(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - void SetAppStats(const String&, const String&)
@@ -5858,6 +5999,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -5916,6 +6059,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -6071,6 +6216,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -6143,6 +6290,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -6210,6 +6359,8 @@ Methods:
 
 - void AddChild(UIElement@)
 - void AddItem(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -6226,10 +6377,14 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - UIElement@[]@ GetItems() const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - void InsertItem(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
@@ -6248,6 +6403,7 @@ Methods:
 - void Remove()
 - void RemoveAllChildren()
 - void RemoveAllItems()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
@@ -6255,6 +6411,7 @@ Methods:
 - void RemoveItem(UIElement@)
 - void RemoveItem(uint)
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -6382,6 +6539,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - Texture@ texture
 - bool tiled
@@ -6420,6 +6578,8 @@ Methods:
 - bool GetInterceptNetworkUpdate(const String&) const
 - Vector3 GetRandomPoint()
 - Vector3 GetRandomPointInCircle(const Vector3&, float, const Vector3& = Vector3 ( 1.0 , 1.0 , 1.0 ))
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -6501,6 +6661,8 @@ Methods:
 - void DumpProfiler()
 - void DumpResources(bool = false)
 - void Exit()
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void RunFrame()
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 
@@ -6528,6 +6690,8 @@ Properties:
 Methods:
 
 - void Close()
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Open(const String&, FileMode = FILE_READ)
 - uint8[]@ Read(uint)
 - bool ReadBool()
@@ -6618,6 +6782,8 @@ Properties:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - void SetButtonTexts(const String&, const String&)
 - void SetFilters(String[]@, uint)
@@ -6659,6 +6825,8 @@ Methods:
 - bool FileExists(const String&) const
 - String GetAppPreferencesDir(const String&, const String&) const
 - uint GetLastModifiedTime(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Rename(const String&, const String&)
 - String[]@ ScanDir(const String&, const String&, uint, bool) const
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
@@ -6700,6 +6868,8 @@ Properties:
 Methods:
 
 - IntVector2 GetTotalGlyphOffset(int) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -6753,11 +6923,13 @@ Properties:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - bool SetDrawRange(PrimitiveType, uint, uint, bool = true)
 - bool SetDrawRange(PrimitiveType, uint, uint, uint, uint, bool = true)
 - void SetIndexBuffer(IndexBuffer@)
-- bool SetVertexBuffer(uint, VertexBuffer@, uint = MASK_DEFAULT)
+- bool SetVertexBuffer(uint, VertexBuffer@)
 
 Properties:
 
@@ -6774,7 +6946,6 @@ Properties:
 - String typeName // readonly
 - VertexBuffer@[] vertexBuffers // readonly
 - uint vertexCount // readonly
-- uint[] vertexElementMasks // readonly
 - uint vertexStart // readonly
 - int weakRefs // readonly
 
@@ -6787,6 +6958,8 @@ Methods:
 - void BeginDumpShaders(const String&)
 - void Close()
 - void EndDumpShaders()
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void Maximize()
 - void Minimize()
 - void PrecacheShaders(File@)
@@ -6908,6 +7081,8 @@ Methods:
 - uint GetPixelInt(int, int, int) const
 - Color GetPixelTrilinear(float, float, float) const
 - Image@ GetSubimage(const IntRect&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool LoadColorLUT(File@)
@@ -6955,6 +7130,8 @@ Properties:
 Methods:
 
 - VectorBuffer GetData()
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - bool SetData(VectorBuffer&)
 - bool SetDataRange(VectorBuffer&, uint, uint, bool = false)
@@ -6985,18 +7162,24 @@ Methods:
 - int GetScancodeFromKey(int) const
 - int GetScancodeFromName(const String&) const
 - String GetScancodeName(int) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - uint LoadGestures(File@)
 - uint LoadGestures(VectorBuffer&)
 - bool RecordGesture()
 - void RemoveAllGestures()
 - bool RemoveGesture(uint)
 - bool RemoveScreenJoystick(int)
+- void ResetMouseGrabbed()
+- void ResetMouseMode()
 - void ResetMouseVisible()
 - bool SaveGesture(File@, uint)
 - bool SaveGesture(VectorBuffer&, uint)
 - bool SaveGestures(File@)
 - bool SaveGestures(VectorBuffer&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
+- void SetMouseGrabbed(bool, bool = false)
+- void SetMouseMode(MouseMode, bool = false)
 - void SetMouseVisible(bool, bool = false)
 
 Properties:
@@ -7005,12 +7188,14 @@ Properties:
 - bool focus // readonly
 - JoystickState@[] joysticks // readonly
 - JoystickState@[] joysticksByIndex // readonly
+- JoystickState@[] joysticksByName // readonly
 - bool[] keyDown // readonly
 - bool[] keyPress // readonly
 - bool minimized // readonly
 - bool[] mouseButtonDown // readonly
 - bool[] mouseButtonPress // readonly
 - bool mouseGrabbed
+- bool mouseLocked // readonly
 - MouseMode mouseMode
 - IntVector2 mouseMove // readonly
 - int mouseMoveWheel // readonly
@@ -7076,6 +7261,8 @@ Properties:
 Methods:
 
 - JSONValue& GetRoot()
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -7161,6 +7348,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -7248,6 +7437,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -7264,9 +7455,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -7283,11 +7478,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -7400,6 +7597,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - String text
 - bool textCopyable
@@ -7427,6 +7625,8 @@ Methods:
 - void AddChild(UIElement@)
 - void AddItem(UIElement@)
 - void AddSelection(uint)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - void ChangeSelection(int, bool)
@@ -7448,10 +7648,14 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - UIElement@[]@ GetItems() const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - void InsertItem(uint, UIElement@, UIElement@ = null)
 - bool IsExpanded(uint) const
@@ -7472,6 +7676,7 @@ Methods:
 - void Remove()
 - void RemoveAllChildren()
 - void RemoveAllItems()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
@@ -7480,6 +7685,7 @@ Methods:
 - void RemoveItem(uint)
 - void RemoveObjectAnimation()
 - void RemoveSelection(uint)
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -7606,6 +7812,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - TraversalMode traversalMode
 - StringHash type // readonly
@@ -7629,6 +7836,8 @@ Methods:
 - String Get(const String&)
 - String GetLanguage(int)
 - int GetLanguageIndex(const String&)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void LoadJSON(const JSONValue&)
 - void LoadJSONFile(const String&)
 - void Reset()
@@ -7656,6 +7865,8 @@ Methods:
 - void Close()
 - void Debug(const String&)
 - void Error(const String&)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void Info(const String&)
 - void Open(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
@@ -7685,6 +7896,8 @@ Methods:
 - ValueAnimation@ GetShaderParameterAnimation(const String&) const
 - float GetShaderParameterAnimationSpeed(const String&) const
 - WrapMode GetShaderParameterAnimationWrapMode(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Load(const JSONValue&)
@@ -7726,6 +7939,28 @@ Properties:
 - String typeName // readonly
 - uint useTimer // readonly
 - int weakRefs // readonly
+
+<a name="Class_Matrix2"></a>
+
+### Matrix2
+
+Methods:
+
+- bool Equals(const Matrix2&) const
+- Matrix2 Inverse() const
+- Vector2 Scale() const
+- Matrix2 Scaled(const Vector2&) const
+- void SetScale(const Vector2&)
+- void SetScale(float)
+- String ToString() const
+- Matrix2 Transpose() const
+
+Properties:
+
+- float m00
+- float m01
+- float m10
+- float m11
 
 <a name="Class_Matrix3"></a>
 
@@ -7837,6 +8072,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -7853,9 +8090,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -7872,11 +8113,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -7998,6 +8241,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - Texture@ texture
 - bool tiled
@@ -8018,6 +8262,8 @@ Properties:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 
 Properties:
@@ -8039,6 +8285,8 @@ Methods:
 
 - Model@ Clone(const String& = String ( )) const
 - Geometry@ GetGeometry(uint, uint) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -8078,6 +8326,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -8138,6 +8388,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -8205,6 +8457,8 @@ Methods:
 - bool GetInterceptNetworkUpdate(const String&) const
 - Vector3 GetRandomPoint()
 - Vector3 GetRandomPointInCircle(const Vector3&, float, const Vector3& = Vector3 ( 1.0 , 1.0 , 1.0 ))
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -8284,6 +8538,8 @@ Methods:
 - bool CheckRemoteEvent(const String&) const
 - bool Connect(const String&, uint16, Scene@, const VariantMap& = VariantMap ( ))
 - void Disconnect(int = 0)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - HttpRequest@ MakeHttpRequest(const String&, const String& = String ( ), String[]@ = null, const String& = String ( ))
 - void RegisterRemoteEvent(const String&) const
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
@@ -8323,6 +8579,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -8376,6 +8634,8 @@ Properties:
 Methods:
 
 - void AddChild(Node@, uint = M_MAX_UNSIGNED)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - Node@ Clone(CreateMode = REPLICATED)
 - Component@ CloneComponent(Component@, CreateMode, uint = 0)
@@ -8395,6 +8655,7 @@ Methods:
 - Node@[]@ GetChildrenWithComponent(const String&, bool = false) const
 - Node@[]@ GetChildrenWithScript(bool = false) const
 - Node@[]@ GetChildrenWithScript(const String&, bool = false) const
+- Node@[]@ GetChildrenWithTag(const String&, bool = false) const
 - Component@ GetComponent(const String&, bool = false) const
 - Component@[]@ GetComponents() const
 - Component@[]@ GetComponents(const String&, bool = false) const
@@ -8404,6 +8665,9 @@ Methods:
 - ScriptObject@ GetScriptObject() const
 - ScriptObject@ GetScriptObject(const String&) const
 - bool HasComponent(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -8418,6 +8682,7 @@ Methods:
 - void Remove()
 - void RemoveAllChildren()
 - void RemoveAllComponents()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(Node@)
 - void RemoveChildren(bool, bool, bool)
@@ -8427,6 +8692,7 @@ Methods:
 - void RemoveComponents(const String&)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - void Roll(float, TransformSpace = TS_LOCAL)
@@ -8508,6 +8774,7 @@ Properties:
 - Vector2 scale2D
 - Scene@ scene // readonly
 - ScriptObject@ scriptObject // readonly
+- String[]@ tags // readonly
 - bool temporary
 - Matrix3x4 transform // readonly
 - StringHash type // readonly
@@ -8532,6 +8799,8 @@ Properties:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 
 Properties:
@@ -8552,6 +8821,8 @@ Methods:
 - ValueAnimation@ GetAttributeAnimation(const String&) const
 - float GetAttributeAnimationSpeed(const String&) const
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - void RemoveAttributeAnimation(ValueAnimation@)
@@ -8590,6 +8861,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -8657,6 +8930,8 @@ Methods:
 - Drawable@[]@ GetDrawables(const Sphere&, uint8 = DRAWABLE_ANY, uint = DEFAULT_VIEWMASK)
 - Drawable@[]@ GetDrawables(const Vector3&, uint8 = DRAWABLE_ANY, uint = DEFAULT_VIEWMASK)
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -8720,6 +8995,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -8775,6 +9052,8 @@ Methods:
 
 - bool Exists(const String&) const
 - String[]@ GetEntryNames() const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Open(const String&, uint = 0) const
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - bool compressed() const
@@ -8803,6 +9082,8 @@ Methods:
 - void AddTextureTime(Rect&, float)
 - ColorFrame@ GetColorFrame(uint) const
 - TextureFrame@ GetTextureFrame(uint) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Load(const XMLElement&)
@@ -8826,6 +9107,7 @@ Properties:
 - float dampingForce
 - Vector3 emitterSize
 - EmitterType emitterType
+- FaceCameraMode faceCameraMode
 - float inactiveTime
 - Material@ material
 - Vector3 maxDirection
@@ -8865,6 +9147,8 @@ Properties:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -8899,6 +9183,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -8987,6 +9273,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -9076,6 +9364,7 @@ Properties:
 
 - RigidBody@ body // readonly
 - float distance
+- float hitFraction
 - Vector3 normal
 - Vector3 position
 
@@ -9111,6 +9400,8 @@ Methods:
 - RigidBody@[]@ GetRigidBodies(RigidBody@)
 - RigidBody@[]@ GetRigidBodies(const BoundingBox&, uint = 0xffff)
 - RigidBody@[]@ GetRigidBodies(const Sphere&, uint = 0xffff)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -9118,6 +9409,7 @@ Methods:
 - void MarkNetworkUpdate() const
 - PhysicsRaycastResult[]@ Raycast(const Ray&, float, uint = 0xffff)
 - PhysicsRaycastResult RaycastSingle(const Ray&, float, uint = 0xffff)
+- PhysicsRaycastResult RaycastSingleSegmented(const Ray&, float, float, uint = 0xffff)
 - void Remove()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveCachedGeometry(Model@)
@@ -9186,6 +9478,8 @@ Methods:
 - RigidBody2D@[]@ GetRigidBodies(const Rect&, uint = 0xffff)
 - RigidBody2D@ GetRigidBody(const Vector2&, uint = 0xffff)
 - RigidBody2D@ GetRigidBody(int, int, uint = 0xffff)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -9315,15 +9609,18 @@ Properties:
 
 Methods:
 
+- Quaternion Conjugate() const
 - float DotProduct(const Quaternion&) const
 - bool Equals(const Quaternion&) const
 - void FromAngleAxis(float, const Vector3&)
 - void FromAxes(const Vector3&, const Vector3&, const Vector3&)
 - void FromEulerAngles(float, float, float)
-- bool FromLookRotation(const Vector3&, const Vector3&)
+- bool FromLookRotation(const Vector3&, const Vector3& = Vector3 ( 0.0 , 1.0 , 0.0 ))
+- void FromRotationMatrix(const Matrix3&)
 - void FromRotationTo(const Vector3&, const Vector3&)
 - Quaternion Inverse() const
 - bool IsNaN() const
+- float LengthSquared() const
 - Quaternion Nlerp(Quaternion, float, bool) const
 - void Normalize()
 - Quaternion Normalized() const
@@ -9335,6 +9632,7 @@ Properties:
 - Vector3 eulerAngles // readonly
 - float pitch // readonly
 - float roll // readonly
+- Matrix3 rotationMatrix // readonly
 - float w
 - float x
 - float y
@@ -9526,9 +9824,12 @@ Properties:
 Methods:
 
 - void DrawDebugGeometry(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void ReloadShaders() const
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - void SetDefaultRenderPath(XMLFile@)
+- void SetVSMShadowParameters(float, float)
 
 Properties:
 
@@ -9537,6 +9838,7 @@ Properties:
 - Material@ defaultLightSpot // readonly
 - Material@ defaultMaterial // readonly
 - RenderPath@ defaultRenderPath
+- Technique@ defaultTechnique
 - Zone@ defaultZone // readonly
 - bool drawShadows
 - bool dynamicInstancing
@@ -9561,7 +9863,8 @@ Properties:
 - int refs // readonly
 - bool reuseShadowMaps
 - int shadowMapSize
-- int shadowQuality
+- ShadowQuality shadowQuality
+- float shadowSoftness
 - bool specularLighting
 - int textureAnisotropy
 - TextureFilterMode textureFilterMode
@@ -9570,6 +9873,7 @@ Properties:
 - StringHash type // readonly
 - String typeName // readonly
 - Viewport@[] viewports
+- Vector2 vsmShadowParameters
 - int weakRefs // readonly
 
 <a name="Class_Resource"></a>
@@ -9578,6 +9882,8 @@ Properties:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -9614,6 +9920,8 @@ Methods:
 - Resource@ GetResource(StringHash, const String&, bool = true)
 - Resource@ GetResource(const String&, const String&, bool = true)
 - String GetResourceFileName(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void ReleaseAllResources(bool = false)
 - void ReleaseResource(const String&, const String&, bool = false)
 - void ReleaseResources(StringHash, bool = false)
@@ -9696,6 +10004,8 @@ Methods:
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
 - Vector3 GetVelocityAtPoint(const Vector3&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -9790,6 +10100,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -9853,6 +10165,8 @@ Methods:
 
 - void AddChild(Node@, uint = M_MAX_UNSIGNED)
 - void AddRequiredPackageFile(PackageFile@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void Clear(bool = true, bool = true)
 - void ClearRequiredPackageFiles()
@@ -9873,17 +10187,22 @@ Methods:
 - Node@[]@ GetChildrenWithComponent(const String&, bool = false) const
 - Node@[]@ GetChildrenWithScript(bool = false) const
 - Node@[]@ GetChildrenWithScript(const String&, bool = false) const
+- Node@[]@ GetChildrenWithTag(const String&, bool = false) const
 - Component@ GetComponent(const String&, bool = false) const
 - Component@ GetComponent(uint) const
 - Component@[]@ GetComponents() const
 - Component@[]@ GetComponents(const String&, bool = false) const
 - bool GetInterceptNetworkUpdate(const String&) const
 - Node@ GetNode(uint) const
+- Node@[]@ GetNodesWithTag(const String&) const
 - Component@ GetOrCreateComponent(const String&, CreateMode = REPLICATED, uint = 0)
 - Component@ GetParentComponent(const String&, bool = false) const
 - ScriptObject@ GetScriptObject() const
 - ScriptObject@ GetScriptObject(const String&) const
 - bool HasComponent(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&)
 - Node@ Instantiate(File@, const Vector3&, const Quaternion&, CreateMode = REPLICATED)
 - Node@ Instantiate(VectorBuffer&, const Vector3&, const Quaternion&, CreateMode = REPLICATED)
 - Node@ InstantiateJSON(File@, const Vector3&, const Quaternion&, CreateMode = REPLICATED)
@@ -9914,6 +10233,7 @@ Methods:
 - void Remove()
 - void RemoveAllChildren()
 - void RemoveAllComponents()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(Node@)
 - void RemoveChildren(bool, bool, bool)
@@ -9923,6 +10243,7 @@ Methods:
 - void RemoveComponents(const String&)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetToDefault()
 - void Roll(float, TransformSpace = TS_LOCAL)
 - void Rotate(const Quaternion&, TransformSpace = TS_LOCAL)
@@ -10016,6 +10337,7 @@ Properties:
 - ScriptObject@ scriptObject // readonly
 - float smoothingConstant
 - float snapThreshold
+- String[]@ tags // readonly
 - bool temporary
 - float timeScale
 - Matrix3x4 transform // readonly
@@ -10044,6 +10366,8 @@ Methods:
 
 - void DumpAPI(DumpMode = DOXYGEN, const String& = String ( ))
 - bool Execute(const String&)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 
 Properties:
@@ -10066,6 +10390,8 @@ Methods:
 - void ClearDelayedExecute(const String& = String ( ))
 - void DelayedExecute(float, bool, const String&, const Variant[]@ = null)
 - bool Execute(const String&, const Variant[]@ = null)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -10104,6 +10430,8 @@ Methods:
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
 - bool HasMethod(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsA(const String&) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -10161,6 +10489,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - void ChangeValue(float)
@@ -10178,9 +10508,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -10197,11 +10531,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -10311,6 +10647,7 @@ Properties:
 - bool sortChildren
 - float stepFactor
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - TraversalMode traversalMode
 - StringHash type // readonly
@@ -10331,6 +10668,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -10347,9 +10686,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -10366,11 +10709,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -10482,6 +10827,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - TraversalMode traversalMode
 - StringHash type // readonly
@@ -10506,6 +10852,8 @@ Methods:
 - Variant GetAttribute(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -10604,6 +10952,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -10673,6 +11023,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - void ChangeValue(float)
@@ -10690,9 +11042,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -10709,11 +11065,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -10824,6 +11182,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - Texture@ texture
 - bool tiled
@@ -10854,6 +11213,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -10908,6 +11269,8 @@ Properties:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -10947,6 +11310,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -11004,6 +11369,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -11075,6 +11442,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -11205,6 +11574,8 @@ Methods:
 - bool GetInterceptNetworkUpdate(const String&) const
 - Vector3 GetPoint(float) const
 - Vector3 GetPosition() const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -11263,6 +11634,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -11276,9 +11649,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -11293,11 +11670,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetToDefault()
 - bool Save(File@) const
 - bool Save(VectorBuffer&) const
@@ -11370,6 +11749,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - Texture@ texture
 - StringHash type // readonly
@@ -11388,6 +11768,8 @@ Properties:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -11404,6 +11786,7 @@ Properties:
 - IntRect rectangle
 - int refs // readonly
 - Texture2D@ texture
+- float textureEdgeOffset
 - StringHash type // readonly
 - String typeName // readonly
 - uint useTimer // readonly
@@ -11417,6 +11800,8 @@ Methods:
 
 - void DefineSprite(const String&, const IntRect&, const Vector2& = Vector2 ( 0.5f , 0.5f ), const IntVector2& = IntVector2 :: ZERO)
 - Sprite2D@ GetSprite(const String&)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -11429,7 +11814,7 @@ Properties:
 - uint memoryUse // readonly
 - String name
 - int refs // readonly
-- Texture2D@ texture // readonly
+- Texture2D@ texture
 - StringHash type // readonly
 - String typeName // readonly
 - uint useTimer // readonly
@@ -11451,6 +11836,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool IsInside(const Vector3&) const
 - bool IsInsideLocal(const Vector3&) const
@@ -11532,6 +11919,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -11614,6 +12003,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -11760,10 +12151,13 @@ Properties:
 
 Methods:
 
+- Technique@ Clone(const String& = String ( )) const
 - Pass@ CreatePass(const String&)
 - Pass@ GetPass(const String&)
 - Pass@ GetSupportedPass(const String&)
 - bool HasPass(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - void RemovePass(const String&)
@@ -11816,6 +12210,8 @@ Methods:
 - bool GetInterceptNetworkUpdate(const String&) const
 - Vector3 GetNormal(const Vector3&) const
 - TerrainPatch@ GetPatch(int, int) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -11895,6 +12291,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -11959,6 +12357,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - void ClearSelection()
@@ -11976,9 +12376,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -11995,11 +12399,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -12117,6 +12523,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - String text
 - HorizontalAlignment textAlignment
@@ -12148,6 +12555,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -12238,6 +12647,8 @@ Properties:
 Methods:
 
 - void ClearDataLost()
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -12280,6 +12691,8 @@ Methods:
 
 - void ClearDataLost()
 - Image@ GetImage() const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -12301,6 +12714,53 @@ Properties:
 - TextureFilterMode filterMode
 - uint format // readonly
 - int height // readonly
+- int[] levelHeight // readonly
+- int[] levelWidth // readonly
+- uint levels // readonly
+- uint memoryUse // readonly
+- int[] mipsToSkip
+- String name
+- int refs // readonly
+- RenderSurface@ renderSurface // readonly
+- bool sRGB
+- StringHash type // readonly
+- String typeName // readonly
+- TextureUsage usage // readonly
+- uint useTimer // readonly
+- int weakRefs // readonly
+- int width // readonly
+
+<a name="Class_Texture2DArray"></a>
+
+### Texture2DArray
+
+Methods:
+
+- void ClearDataLost()
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool Load(File@)
+- bool Load(VectorBuffer&)
+- bool Save(File@) const
+- bool Save(VectorBuffer&) const
+- void SendEvent(const String&, VariantMap& = VariantMap ( ))
+- bool SetData(uint, Image@, bool = false)
+- void SetNumLevels(uint)
+- bool SetSize(uint, int, int, uint, TextureUsage = TEXTURE_STATIC)
+
+Properties:
+
+- TextureAddressMode[] addressMode
+- Texture@ backupTexture
+- Color borderColor
+- String category // readonly
+- uint components // readonly
+- bool compressed // readonly
+- bool dataLost // readonly
+- TextureFilterMode filterMode
+- uint format // readonly
+- int height // readonly
+- uint layers
 - int[] levelHeight // readonly
 - int[] levelWidth // readonly
 - uint levels // readonly
@@ -12324,6 +12784,8 @@ Properties:
 Methods:
 
 - void ClearDataLost()
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -12331,7 +12793,7 @@ Methods:
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - bool SetData(Image@, bool = false)
 - void SetNumLevels(uint)
-- bool SetSize(int, int, uint, TextureUsage = TEXTURE_STATIC)
+- bool SetSize(int, int, int, uint, TextureUsage = TEXTURE_STATIC)
 
 Properties:
 
@@ -12352,7 +12814,6 @@ Properties:
 - int[] mipsToSkip
 - String name
 - int refs // readonly
-- RenderSurface@ renderSurface // readonly
 - bool sRGB
 - StringHash type // readonly
 - String typeName // readonly
@@ -12368,6 +12829,9 @@ Properties:
 Methods:
 
 - void ClearDataLost()
+- Image@ GetImage(CubeMapFace) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -12446,6 +12910,8 @@ Methods:
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
 - TileMapLayer2D@ GetLayer(uint) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -12527,6 +12993,8 @@ Methods:
 - Tile2D@ GetTile(int, int) const
 - Node@ GetTileNode(int, int) const
 - bool HasProperty(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
 - bool LoadJSON(const JSONValue&, bool = false)
@@ -12606,6 +13074,8 @@ Properties:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 
 Properties:
@@ -12637,6 +13107,8 @@ Methods:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -12661,6 +13133,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -12677,9 +13151,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -12696,11 +13174,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -12801,6 +13281,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - TraversalMode traversalMode
 - StringHash type // readonly
@@ -12837,6 +13318,8 @@ Methods:
 - UIElement@ GetElementAt(const IntVector2&, bool = true)
 - UIElement@ GetElementAt(int, int, bool = true)
 - bool HasModalElement() const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsDragging() const
 - UIElement@ LoadLayout(File@)
 - UIElement@ LoadLayout(File@, XMLFile@)
@@ -12885,6 +13368,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -12901,9 +13386,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -12920,11 +13409,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -13024,6 +13515,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - TraversalMode traversalMode
 - StringHash type // readonly
@@ -13042,6 +13534,8 @@ Properties:
 
 Methods:
 
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - bool Save(File@) const
@@ -13075,6 +13569,7 @@ Methods:
 - void FromString(VariantType, const String&)
 - void FromString(const String&, const String&)
 - bool GetBool() const
+- VectorBuffer GetBuffer() const
 - double GetDouble() const
 - float GetFloat() const
 - int GetInt() const
@@ -13098,7 +13593,6 @@ Methods:
 - const Vector2& GetVector2() const
 - const Vector3& GetVector3() const
 - const Vector4& GetVector4() const
-- const VectorBuffer GetBuffer() const
 
 Properties:
 
@@ -13133,6 +13627,7 @@ Methods:
 
 - Vector2 Abs() const
 - float AbsDotProduct(const Vector2&) const
+- float Angle(const Vector2&) const
 - float DotProduct(const Vector2&) const
 - bool Equals(const Vector2&) const
 - bool IsNaN() const
@@ -13287,10 +13782,17 @@ Properties:
 
 Methods:
 
-- VectorBuffer GetData()
+- VectorBuffer GetData() const
+- uint GetElementOffset(VertexElementSemantic, uint8 = 0) const
+- uint GetElementOffset(VertexElementType, VertexElementSemantic, uint8 = 0) const
+- bool HasElement(VertexElementSemantic, uint8 = 0) const
+- bool HasElement(VertexElementType, VertexElementSemantic, uint8 = 0) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - bool SetData(VectorBuffer&)
 - bool SetDataRange(VectorBuffer&, uint, uint, bool = false)
+- void SetSize(uint, VertexElement[]@, bool = false)
 - void SetSize(uint, uint, bool = false)
 
 Properties:
@@ -13298,6 +13800,7 @@ Properties:
 - String category // readonly
 - bool dynamic // readonly
 - uint elementMask // readonly
+- VertexElement[]@ elements // readonly
 - int refs // readonly
 - bool shadowed
 - StringHash type // readonly
@@ -13306,6 +13809,18 @@ Properties:
 - uint vertexSize // readonly
 - int weakRefs // readonly
 
+<a name="Class_VertexElement"></a>
+
+### VertexElement
+
+Properties:
+
+- uint8 index
+- uint offset
+- bool perInstance
+- VertexElementSemantic semantic
+- VertexElementType type
+
 <a name="Class_View3D"></a>
 
 ### View3D
@@ -13313,6 +13828,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -13329,9 +13846,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -13349,11 +13870,13 @@ Methods:
 - void QueueUpdate()
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -13477,6 +14000,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - Texture@ texture
 - bool tiled
@@ -13499,6 +14023,8 @@ Properties:
 Methods:
 
 - Ray GetScreenRay(int, int) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - Vector3 ScreenToWorldPoint(int, int, float) const
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
 - void SetRenderPath(XMLFile@)
@@ -13539,6 +14065,8 @@ Properties:
 Methods:
 
 - void AddChild(UIElement@)
+- void AddTag(const String&)
+- void AddTags(const String&, int8 = ';')
 - void ApplyAttributes()
 - void BringToFront()
 - UIElement@ CreateChild(const String&, const String& = String ( ), uint = M_MAX_UNSIGNED)
@@ -13555,9 +14083,13 @@ Methods:
 - UIElement@ GetChild(const String&, bool = false) const
 - UIElement@ GetChild(const StringHash&, const Variant& = Variant ( ), bool = false) const
 - UIElement@[]@ GetChildren(bool = false) const
+- UIElement@[]@ GetChildrenWithTag(const String&, bool = false) const
 - UIElement@ GetElementEventSender() const
 - bool GetInterceptNetworkUpdate(const String&) const
 - uint GetNumChildren(bool) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
+- bool HasTag(const String&) const
 - void InsertChild(uint, UIElement@)
 - bool IsInside(IntVector2, bool)
 - bool IsInsideCombined(IntVector2, bool)
@@ -13574,11 +14106,13 @@ Methods:
 - void MarkNetworkUpdate() const
 - void Remove()
 - void RemoveAllChildren()
+- void RemoveAllTags()
 - void RemoveAttributeAnimation(const String&)
 - void RemoveChild(UIElement@, uint = 0)
 - void RemoveChild(uint)
 - void RemoveInstanceDefault()
 - void RemoveObjectAnimation()
+- bool RemoveTag(const String&)
 - void ResetDeepEnabled()
 - void ResetToDefault()
 - bool Save(File@) const
@@ -13695,6 +14229,7 @@ Properties:
 - IntVector2 size
 - bool sortChildren
 - String style
+- String[]@ tags // readonly
 - bool temporary
 - Texture@ texture
 - bool tiled
@@ -13801,6 +14336,8 @@ Methods:
 - XMLElement CreateRoot(const String&)
 - bool FromString(const String&)
 - XMLElement GetRoot(const String& = String ( ))
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool Load(File@)
 - bool Load(VectorBuffer&)
 - void Patch(XMLElement)
@@ -13870,6 +14407,8 @@ Methods:
 - WrapMode GetAttributeAnimationWrapMode(const String&) const
 - Variant GetAttributeDefault(const String&) const
 - bool GetInterceptNetworkUpdate(const String&) const
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsInView(Camera@) const
 - bool Load(File@, bool = false)
 - bool Load(VectorBuffer&, bool = false)
@@ -13942,6 +14481,12 @@ Properties:
 - Texture@ zoneTexture
 
 \section ScriptAPI_Enums Enumerations
+
+### AnimationBlendMode
+
+- ABM_LERP
+- ABM_ADDITIVE
+
 
 ### BlendMode
 
@@ -14106,6 +14651,7 @@ Properties:
 - FC_ROTATE_Y
 - FC_LOOKAT_XYZ
 - FC_LOOKAT_Y
+- FC_DIRECTION
 
 
 ### FileMode
@@ -14308,6 +14854,16 @@ Properties:
 - SIZE_VIEWPORTMULTIPLIER
 
 
+### ShadowQuality
+
+- SHADOWQUALITY_SIMPLE_16BIT
+- SHADOWQUALITY_SIMPLE_24BIT
+- SHADOWQUALITY_PCF_16BIT
+- SHADOWQUALITY_PCF_24BIT
+- SHADOWQUALITY_VSM
+- SHADOWQUALITY_BLUR_VSM
+
+
 ### ShapeType
 
 - SHAPE_BOX
@@ -14443,6 +14999,32 @@ Properties:
 - VAR_STRINGVECTOR
 
 
+### VertexElementSemantic
+
+- SEM_POSITION
+- SEM_NORMAL
+- SEM_BINORMAL
+- SEM_TANGENT
+- SEM_TEXCOORD
+- SEM_COLOR
+- SEM_BLENDWEIGHTS
+- SEM_BLENDINDICES
+- SEM_OBJECTINDEX
+- MAX_VERTEX_ELEMENT_SEMANTICS
+
+
+### VertexElementType
+
+- TYPE_INT
+- TYPE_FLOAT
+- TYPE_VECTOR2
+- TYPE_VECTOR3
+- TYPE_VECTOR4
+- TYPE_UBYTE4
+- TYPE_UBYTE4_NORM
+- MAX_VERTEX_ELEMENT_TYPES
+
+
 ### VerticalAlignment
 
 - VA_TOP
@@ -14487,11 +15069,13 @@ Properties:
 - uint GetFloat16Format()
 - uint GetFloat32Format()
 - uint GetFormat(const String&)
+- Variant GetGlobalVar(const String&)
 - String GetInternalPath(const String&)
 - uint GetLinearDepthFormat()
 - uint GetLuminanceAlphaFormat()
 - uint GetLuminanceFormat()
 - uint GetMaxBones()
+- String GetMiniDumpDir()
 - uint GetNumLogicalCPUs()
 - uint GetNumPhysicalCPUs()
 - String[]@ GetObjectCategories()
@@ -14510,6 +15094,8 @@ Properties:
 - uint GetRandomSeed()
 - uint GetReadableDepthFormat()
 - String GetTextureUnitName(TextureUnit)
+- bool HasSubscribedToEvent(Object@, const String&)
+- bool HasSubscribedToEvent(const String&)
 - bool IsAbsolutePath(const String&)
 - bool IsAlpha(uint)
 - bool IsDigit(uint)
@@ -14545,6 +15131,8 @@ Properties:
 - String ReplaceExtension(const String&, const String&)
 - uint SDBMHash(uint, uint8)
 - void SendEvent(const String&, VariantMap& = VariantMap ( ))
+- void SetGlobalVar(const String&, Variant&)
+- void SetMiniDumpDir(const String&)
 - void SetRandomSeed(uint)
 - float Sign(float)
 - float Sin(float)
@@ -14573,6 +15161,7 @@ Properties:
 - DebugRenderer@ debugRenderer
 - Engine@ engine
 - FileSystem@ fileSystem
+- VariantMap globalVars
 - Graphics@ graphics
 - Input@ input
 - Localization@ localization
@@ -14780,12 +15369,12 @@ Properties:
 - uint MASK_COLOR
 - uint MASK_CUBETEXCOORD1
 - uint MASK_CUBETEXCOORD2
-- uint MASK_DEFAULT
 - uint MASK_INSTANCEMATRIX1
 - uint MASK_INSTANCEMATRIX2
 - uint MASK_INSTANCEMATRIX3
 - uint MASK_NONE
 - uint MASK_NORMAL
+- uint MASK_OBJECTINDEX
 - uint MASK_POSITION
 - uint MASK_TANGENT
 - uint MASK_TEXCOORD1
@@ -14806,6 +15395,7 @@ Properties:
 - uint M_MIN_UNSIGNED
 - float M_PI
 - float M_RADTODEG
+- uint NPOS
 - float PIXEL_SIZE
 - int QUALITY_HIGH
 - int QUALITY_LOW
@@ -15064,10 +15654,6 @@ Properties:
 - uint SCAN_DIRS
 - uint SCAN_FILES
 - uint SCAN_HIDDEN
-- int SHADOWQUALITY_HIGH_16BIT
-- int SHADOWQUALITY_HIGH_24BIT
-- int SHADOWQUALITY_LOW_16BIT
-- int SHADOWQUALITY_LOW_24BIT
 - String SOUND_AMBIENT
 - String SOUND_EFFECT
 - String SOUND_MASTER
@@ -15080,7 +15666,6 @@ Properties:
 - uint VO_NONE
 - Color WHITE
 - Color YELLOW
-- VariantMap globalVars
 */
 
 }
