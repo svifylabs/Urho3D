@@ -458,6 +458,21 @@ public:
     /// Get or create a constant buffer. Will be shared between shaders if possible.
     ConstantBuffer* GetOrCreateConstantBuffer(ShaderType type, unsigned index, unsigned size);
 
+    /// Center window.
+    void CenterWindow();
+    /// Bring the window to front with focus
+    void RaiseWindow();
+    /// Get the SDL_Window as a void* to avoid having to include the graphics implementation
+    void* GetSDLWindow();
+    /// Return the current monitor number
+    int GetCurrentMonitor();
+    /// Return the available monitors number
+    int GetNumMonitors();
+    /// Return true if window is maximized
+    bool GetMaximized();
+    /// Return monitor resolution
+    IntVector2 GetMonitorResolution(int monitorId) const;
+
     /// Return the API-specific alpha texture format.
     static unsigned GetAlphaFormat();
     /// Return the API-specific luminance texture format.

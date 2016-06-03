@@ -394,6 +394,20 @@ public:
             InsertNode(*it++);
     }
 
+    /// Insert a pair only if a corresponding key does not already exist.
+    Iterator InsertNew(const T& key, const U& value)
+    {
+        unsigned hashKey = Hash(key);
+        if (ptrs_)
+        {
+            Node* node = FindNode(key, hashKey);
+            if (node)
+                return Iterator(node);
+        }
+
+        return InsertNode(key, value, false);
+    }
+
     /// Erase a pair by key. Return true if was found.
     bool Erase(const T& key)
     {

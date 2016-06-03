@@ -53,6 +53,14 @@ public:
     bool SetCurrentDir(const String& pathName);
     /// Create a directory.
     bool CreateDir(const String& pathName);
+    /// Create a directory recursively.
+    bool CreateDirsRecursive(const String& pathName);
+    /// Create directory and all necessary subdirectories below a given root 
+    bool CreateDirs(const String& root, const String& subdirectory);
+    /// Copy a directory, directoryOut must not exist
+    bool CopyDir(const String& directoryIn, const String& directoryOut);
+    /// Remove a directory
+    bool RemoveDir(const String& directoryIn, bool recursive);
     /// Set whether to execute engine console commands as OS-specific system command.
     void SetExecuteConsoleCommands(bool enable);
     /// Run a program using the command interpreter, block until it exits and return the exit code. Will fail if any allowed paths are defined.
@@ -93,6 +101,8 @@ public:
     bool FileExists(const String& fileName) const;
     /// Check if a directory exists.
     bool DirExists(const String& pathName) const;
+    /// Check if a file or directory exists at the specified path
+    bool Exists(const String& pathName) const { return FileExists(pathName) || DirExists(pathName); }
     /// Scan a directory for specified files.
     void ScanDir(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
     /// Return the program's directory. If it does not contain the Urho3D default CoreData and Data directories, and the current working directory does, return the working directory instead.
@@ -101,7 +111,8 @@ public:
     String GetUserDocumentsDir() const;
     /// Return the application preferences directory.
     String GetAppPreferencesDir(const String& org, const String& app) const;
-
+    /// Return the AppBundle Resource directory. Only for APPLE.
+    String GetAppBundleResourceFolder();
 private:
     /// Scan directory, called internally.
     void ScanDirInternal

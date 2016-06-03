@@ -2274,6 +2274,60 @@ void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
         shaderProgram_ = 0;
 }
 
+void Graphics::CenterWindow()
+{
+    if (impl_->window_)
+    {
+        SDL_DisplayMode mode;
+        SDL_GetDesktopDisplayMode(0, &mode);
+
+        int width, height;
+        SDL_GetWindowSize(impl_->window_, &width, &height);
+
+        int x = mode.w / 2 - width / 2;
+        int y = mode.h / 2 - height / 2;
+
+        SetWindowPosition(x, y);
+
+    }
+}
+
+void Graphics::RaiseWindow()
+{
+    if (impl_->window_)
+        SDL_RaiseWindow(impl_->window_);
+}
+
+void* Graphics::GetSDLWindow()
+{
+    return impl_->window_;
+}
+
+int Graphics::GetCurrentMonitor()
+{
+    return SDL_GetWindowDisplayIndex((SDL_Window*) this->GetSDLWindow());
+}
+
+int Graphics::GetNumMonitors()
+{
+    return SDL_GetNumVideoDisplays();
+}
+
+bool Graphics::GetMaximized()
+{
+    if (!impl_->window_)
+        return false;
+
+    return SDL_GetWindowFlags(impl_->window_) & SDL_WINDOW_MAXIMIZED;
+}
+
+Urho3D::IntVector2 Graphics::GetMonitorResolution(int monitorId) const
+{
+    SDL_DisplayMode mode;
+    SDL_GetDesktopDisplayMode(monitorId, &mode);
+    return IntVector2(mode.w, mode.h);
+}
+
 unsigned Graphics::GetAlphaFormat()
 {
     return D3DFMT_A8;
